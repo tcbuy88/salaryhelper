@@ -3,11 +3,15 @@
 <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>SalaryHelper DEMO</title>
 <link rel="stylesheet" href="styles.css"/></head>
 <body>
-  <header><h1>SalaryHelper (DEM O)</h1></header>
+  <header>
+    <h1>SalaryHelper (DEMO)</h1>
+    <div id="userInfo" style="text-align: right; margin-bottom: 8px;"></div>
+  </header>
   <main>
-    <p>欢迎使用 SalaryHelper DEMO。示例入口：</p>
+    <div id="welcome">
+      <p>欢迎使用 SalaryHelper DEMO。示例入口：</p>
+    </div>
     <ul>
-      <li><a href="login.html">登录（模拟）</a></li>
       <li><a href="conversations.html">会话 / 聊天</a></li>
       <li><a href="kb.html">知识库</a></li>
       <li><a href="docgen.html">文书生成</a></li>
@@ -16,8 +20,56 @@
       <li><a href="me.html">用户中心</a></li>
       <li><a href="admin/index.html">管理台 Demo</a></li>
     </ul>
+    <div style="margin-top: 20px;">
+      <button id="logout" class="btn btn-outline">退出登录</button>
+    </div>
   </main>
-  <script src="api-client.js"></script>
-  <script src="app-real.js"></script>
+  <script src="api-client-real.js"></script>
+  <script>
+    // DOM elements
+    const userInfo = document.getElementById('userInfo');
+    const logoutBtn = document.getElementById('logout');
+    
+    // Update user info display
+    async function updateUserInfo() {
+      if (ApiClient.isLoggedIn()) {
+        try {
+          const user = ApiClient.getCurrentUserSync();
+          if (user) {
+            userInfo.innerHTML = `欢迎，${user.name || user.phone}`;
+          } else {
+            // Try to get fresh user data
+            try {
+              const freshUser = await ApiClient.getCurrentUser();
+              userInfo.innerHTML = `欢迎，${freshUser.name || freshUser.phone}`;
+            } catch (error) {
+              console.error('Failed to get current user:', error);
+              userInfo.innerHTML = '';
+            }
+          }
+        } catch (error) {
+          console.error('Error updating user info:', error);
+          userInfo.innerHTML = '';
+        }
+      } else {
+        userInfo.innerHTML = '请先 <a href="login.html">登录</a>';
+      }
+    }
+    
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      ApiClient.logout();
+      window.location.href = '/static/login.html';
+    });
+    
+    // Initialize
+    updateUserInfo();
+    
+    // Check login status and redirect if needed
+    if (!ApiClient.isLoggedIn()) {
+      // Allow access to index page without login for demo purposes
+      console.log('User not logged in, some features may be limited');
+    }
+  </script>
 </body>
 </html>

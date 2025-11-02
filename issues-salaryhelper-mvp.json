@@ -1,4 +1,8 @@
 [
-  {"title":"实现 Auth - 手机号验证码登录","description":"实现前端登录与后端 /auth/login","estimate_days":2,"priority":"high","labels":["auth"]},
-  {"title":"实现 Chat 基础","description":"实现会话、消息、MessageInput、MessageList","estimate_days":5,"priority":"high","labels":["chat"]}
+  {"title":"实现 Auth - 手机号验证码登录","description":"实现前端登录与后端 /auth/login","estimate_days":2,"priority":"high","labels":["auth"],"status":"completed","completed_date":"2025-11-02"},
+  {"title":"实现 Chat 基础","description":"实现会话、消息、MessageInput、MessageList","estimate_days":5,"priority":"high","labels":["chat"],"status":"completed","completed_date":"2025-11-02"},
+  {"title":"实现文件上传系统","description":"实现文件上传API和前端文件管理界面","estimate_days":3,"priority":"medium","labels":["upload"],"status":"pending"},
+  {"title":"实现文书生成功能","description":"实现模板管理和文档生成下载","estimate_days":4,"priority":"medium","labels":["docgen"],"status":"pending"},
+  {"title":"实现支付模拟系统","description":"实现订单创建和支付流程模拟","estimate_days":3,"priority":"medium","labels":["payment"],"status":"pending"},
+  {"title":"完善管理后台","description":"实现用户管理、会话监控和数据统计","estimate_days":5,"priority":"low","labels":["admin"],"status":"pending"}
 ]

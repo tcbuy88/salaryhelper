@@ -1,49 +1,230 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>会话 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
 <body>
-  <h2>会话 / 聊天（本地 Mock）</h2>
-  <div id="convs"></div>
-  <div id="chat"></div>
-  <textarea id="input" rows="3" cols="60"></textarea><br/>
-  <button id="send">发送</button>
-  <script src="api-client.js"></script>
+  <div class="container">
+    <header>
+      <h2>会话 / 聊天</h2>
+      <div id="userInfo" style="text-align: right; font-size: 14px;"></div>
+    </header>
+    
+    <div class="nav">
+      <button id="backBtn" class="btn btn-outline">← 返回首页</button>
+      <button id="newConvBtn" class="btn btn-primary">新建会话</button>
+    </div>
+    
+    <div id="convs" class="conversation-list">
+      <h3>会话列表</h3>
+      <div id="convList"></div>
+    </div>
+    
+    <div id="chat" class="chat-container" style="display: none;">
+      <div class="chat-header">
+        <h3 id="chatTitle">会话</h3>
+        <button id="backToList" class="btn btn-outline">← 返回列表</button>
+      </div>
+      <div id="messageList" class="message-list"></div>
+      <div class="message-input">
+        <textarea id="messageInput" placeholder="输入消息..." rows="3"></textarea>
+        <button id="sendBtn" class="btn btn-primary">发送</button>
+      </div>
+    </div>
+    
+    <div id="loading" style="display: none; text-align: center; padding: 20px;">
+      加载中...
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    async function renderConvs(){
-      const convs = await ApiClient.listConversations();
-      const el = document.getElementById('convs');
-      el.innerHTML = '<h3>会话列表</h3>';
-      convs.forEach(c=> {
-        const btn = document.createElement('button');
-        btn.textContent = c.title || c.id;
-        btn.addEventListener('click', ()=> loadConv(c.id));
-        el.appendChild(btn);
-      });
-      const newBtn = document.createElement('button');
-      newBtn.textContent='新建会话';
-      newBtn.addEventListener('click', async ()=>{
-        const conv = await ApiClient.createConversation({ title: '会话 '+Date.now() });
-        renderConvs();
-        loadConv(conv.id);
-      });
-      el.appendChild(newBtn);
+    // DOM elements
+    const convsDiv = document.getElementById('convs');
+    const convList = document.getElementById('convList');
+    const chatDiv = document.getElementById('chat');
+    const messageList = document.getElementById('messageList');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const newConvBtn = document.getElementById('newConvBtn');
+    const backBtn = document.getElementById('backBtn');
+    const backToList = document.getElementById('backToList');
+    const chatTitle = document.getElementById('chatTitle');
+    const loading = document.getElementById('loading');
+    const userInfo = document.getElementById('userInfo');
+    
+    let currentConvId = null;
+    
+    // Check login status
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
+      }
+      return true;
     }
-    async function loadConv(id){
-      window._convId = id;
-      const data = await ApiClient.getConversation(id);
-      const chat = document.getElementById('chat');
-      chat.innerHTML = '<h3>会话: '+id+'</h3>';
-      (data.messages||[]).forEach(m=>{
-        const p=document.createElement('div');
-        p.textContent = m.sender+': '+(m.content||m.text);
-        chat.appendChild(p);
-      });
+    
+    // Update user info
+    function updateUserInfo() {
+      const user = ApiClient.getCurrentUserSync();
+      if (user) {
+        userInfo.textContent = `${user.name || user.phone}`;
+      }
     }
-    document.getElementById('send').addEventListener('click', async ()=>{
-      const text = document.getElementById('input').value;
-      if(!window._convId){ alert('请选择或创建会话'); return; }
-      await ApiClient.sendMessage(window._convId, { text });
-      document.getElementById('input').value='';
-      setTimeout(()=> loadConv(window._convId), 900);
+    
+    // Show/hide loading
+    function setLoading(isLoading) {
+      loading.style.display = isLoading ? 'block' : 'none';
+    }
+    
+    // Render conversations list
+    async function renderConversations() {
+      if (!checkLoginStatus()) return;
+      
+      setLoading(true);
+      try {
+        const conversations = await ApiClient.listConversations();
+        convList.innerHTML = '';
+        
+        if (conversations.length === 0) {
+          convList.innerHTML = '<p style="color: #64748b; text-align: center;">暂无会话，点击"新建会话"开始</p>';
+          return;
+        }
+        
+        conversations.forEach(conv => {
+          const convEl = document.createElement('div');
+          convEl.className = 'conversation-item';
+          convEl.innerHTML = `
+            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; background: white;">
+              <div style="font-weight: 500;">${conv.title}</div>
+              <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                ${new Date(conv.created_at).toLocaleString()}
+              </div>
+            </div>
+          `;
+          convEl.addEventListener('click', () => loadConversation(conv.id, conv.title));
+          convList.appendChild(convEl);
+        });
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+        convList.innerHTML = '<p style="color: #dc2626;">加载会话列表失败</p>';
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    // Load conversation
+    async function loadConversation(convId, title) {
+      if (!checkLoginStatus()) return;
+      
+      setLoading(true);
+      currentConvId = convId;
+      
+      try {
+        const data = await ApiClient.getConversation(convId);
+        chatTitle.textContent = title || `会话 ${convId}`;
+        
+        // Show chat, hide list
+        convsDiv.style.display = 'none';
+        chatDiv.style.display = 'block';
+        
+        // Render messages
+        messageList.innerHTML = '';
+        const messages = data.messages || [];
+        
+        messages.forEach(msg => {
+          const msgEl = document.createElement('div');
+          msgEl.className = `message ${msg.sender}`;
+          msgEl.innerHTML = `
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">
+              ${msg.sender === 'user' ? '我' : 'AI助手'} · ${new Date(msg.created_at).toLocaleTimeString()}
+            </div>
+            <div>${msg.content}</div>
+          `;
+          messageList.appendChild(msgEl);
+        });
+        
+        // Scroll to bottom
+        messageList.scrollTop = messageList.scrollHeight;
+        
+      } catch (error) {
+        console.error('Failed to load conversation:', error);
+        alert('加载会话失败: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    // Send message
+    async function sendMessage() {
+      if (!checkLoginStatus() || !currentConvId) return;
+      
+      const text = messageInput.value.trim();
+      if (!text) return;
+      
+      const originalText = text;
+      messageInput.value = '';
+      sendBtn.disabled = true;
+      sendBtn.textContent = '发送中...';
+      
+      try {
+        const result = await ApiClient.sendMessage(currentConvId, text);
+        
+        // Refresh messages to show both user message and AI reply
+        await loadConversation(currentConvId, chatTitle.textContent);
+        
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        alert('发送消息失败: ' + error.message);
+        // Restore input on error
+        messageInput.value = originalText;
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送';
+        messageInput.focus();
+      }
+    }
+    
+    // Create new conversation
+    async function createConversation() {
+      if (!checkLoginStatus()) return;
+      
+      const title = prompt('请输入会话标题（可选）:', `会话 ${new Date().toLocaleString()}`);
+      if (title === null) return; // User cancelled
+      
+      setLoading(true);
+      try {
+        const conv = await ApiClient.createConversation(title);
+        await renderConversations();
+        await loadConversation(conv.id, conv.title);
+      } catch (error) {
+        console.error('Failed to create conversation:', error);
+        alert('创建会话失败: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    // Back to list
+    function backToConversationList() {
+      chatDiv.style.display = 'none';
+      convsDiv.style.display = 'block';
+      currentConvId = null;
+    }
+    
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
-    renderConvs();
+    
+    newConvBtn.addEventListener('click', createConversation);
+    backBtn.addEventListener('click', () => window.location.href = '/static/index.html');
+    backToList.addEventListener('click', backToConversationList);
+    
+    // Initialize
+    if (checkLoginStatus()) {
+      updateUserInfo();
+      renderConversations();
+    }
   </script>
 </body></html>

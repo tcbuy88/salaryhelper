@@ -1,25 +1,118 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>登录 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
 <body>
-  <h2>登录（模拟）</h2>
-  <label>手机号: <input id="phone" /></label><button id="send">发送验证码</button><br/>
-  <label>验证码: <input id="code" /></label><button id="login">登录</button>
-  <p><button id="guest">游客模式进入</button></p>
-  <script src="api-client.js"></script>
+  <div class="container">
+    <h2>登录 SalaryHelper</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>手机号: 
+          <input type="tel" id="phone" placeholder="请输入手机号" value="13800000000" required />
+        </label>
+      </div>
+      <div class="form-group">
+        <button type="button" id="sendSms" class="btn btn-secondary">发送验证码</button>
+        <span id="smsStatus" class="status"></span>
+      </div>
+      <div class="form-group">
+        <label>验证码: 
+          <input type="text" id="code" placeholder="请输入验证码" value="123456" required />
+        </label>
+      </div>
+      <div class="form-group">
+        <button type="submit" id="login" class="btn btn-primary">登录</button>
+      </div>
+    </form>
+    <div class="guest-section">
+      <p><button id="guest" class="btn btn-outline">游客模式进入</button></p>
+    </div>
+    <div id="error" class="error-message"></div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    document.getElementById('send').addEventListener('click', ()=> {
-      const phone = document.getElementById('phone').value || '13800000000';
-      ApiClient._mockSendSms(phone);
-      alert('验证码已发送（模拟）: 123456');
+    // DOM elements
+    const phoneInput = document.getElementById('phone');
+    const codeInput = document.getElementById('code');
+    const sendSmsBtn = document.getElementById('sendSms');
+    const loginBtn = document.getElementById('login');
+    const guestBtn = document.getElementById('guest');
+    const errorDiv = document.getElementById('error');
+    const smsStatus = document.getElementById('smsStatus');
+    const loginForm = document.getElementById('loginForm');
+    
+    // Show error message
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Send SMS
+    sendSmsBtn.addEventListener('click', async () => {
+      const phone = phoneInput.value.trim();
+      if (!phone) {
+        showError('请输入手机号');
+        return;
+      }
+      
+      try {
+        sendSmsBtn.disabled = true;
+        smsStatus.textContent = '发送中...';
+        
+        const response = await ApiClient.sendSms(phone);
+        smsStatus.textContent = '验证码已发送';
+        alert(`验证码已发送（模拟）: 123456`);
+        
+        // Enable code input
+        codeInput.focus();
+      } catch (error) {
+        smsStatus.textContent = '';
+        showError('发送验证码失败: ' + error.message);
+      } finally {
+        sendSmsBtn.disabled = false;
+      }
     });
-    document.getElementById('login').addEventListener('click', async ()=>{
-      const phone = document.getElementById('phone').value || '13800000000';
-      const code = document.getElementById('code').value || '123456';
-      await ApiClient.login(phone, code);
-      location.href = '/static/index.html';
+    
+    // Login
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const phone = phoneInput.value.trim();
+      const code = codeInput.value.trim();
+      
+      if (!phone || !code) {
+        showError('请填写手机号和验证码');
+        return;
+      }
+      
+      try {
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+        
+        const result = await ApiClient.login(phone, code);
+        console.log('Login successful:', result);
+        
+        // Redirect to main page
+        window.location.href = '/static/index.html';
+      } catch (error) {
+        showError('登录失败: ' + error.message);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = '登录';
+      }
     });
-    document.getElementById('guest').addEventListener('click', ()=>{
-      ApiClient._mockGuest();
-      location.href='/static/index.html';
+    
+    // Guest mode
+    guestBtn.addEventListener('click', () => {
+      // For guest mode, we can use a mock login or redirect directly
+      alert('游客模式暂未实现，请使用手机号登录');
+      // Alternatively: window.location.href = '/static/index.html';
     });
+    
+    // Check if already logged in
+    if (ApiClient.isLoggedIn()) {
+      window.location.href = '/static/index.html';
+    }
   </script>
 </body></html>
