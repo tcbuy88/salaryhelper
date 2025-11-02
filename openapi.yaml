@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: SalaryHelper API (MVP)
+  version: "1.0.0"
+servers:
+  - url: /api/v1
+paths:
+  /auth/send-sms:
+    post:
+      summary: 发送短信验证码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: 短信已发送
+  /auth/login:
+    post:
+      summary: 登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: 登录成功
+  /conversations:
+    get:
+      summary: 会话列表
+      responses:
+        '200':
+          description: ok
+    post:
+      summary: 创建会话
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: created
+  /conversations/{convId}/messages:
+    post:
+      summary: 发送消息
+      parameters:
+        - in: path
+          name: convId
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: queued
+  /templates:
+    get:
+      summary: 模板列表
+      responses:
+        '200':
+          description: ok
+  /templates/{id}/render:
+    post:
+      summary: 渲染模板
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+  /orders/create:
+    post:
+      summary: 创建订单
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object

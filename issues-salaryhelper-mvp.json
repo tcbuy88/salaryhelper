@@ -1,0 +1,26 @@
+[
+  {
+    "title": "实现 Auth - 手机号验证码登录（前后端联调）",
+    "description": "实现前端登录表单与后端 /auth/send-sms, /auth/login 的联调。前端需保存 token 并处理 401 刷新。含 E2E 测试用例。",
+    "estimate_days": 2,
+    "priority": "high",
+    "labels": ["auth","frontend","backend"],
+    "assignee": ""
+  },
+  {
+    "title": "实现 AttachUploader 组件并联接 /upload",
+    "description": "前端 AttachUploader 组件支持文件选择、大小校验、请求进度显示；后端文件上传接口 /upload 返回 file_id, url, hash。支持图片预览与证据标注。",
+    "estimate_days": 2,
+    "priority": "high",
+    "labels": ["file","frontend","backend"],
+    "assignee": ""
+  },
+  {
+    "title": "实现 ChatListPage 与 ChatViewPage（基础）",
+    "description": "前端实现会话列表、创建会话、打开会话的页面，调用 /conversations 与 /conversations/{id}，支持分页与搜索。",
+    "estimate_days": 3,
+    "priority": "high",
+    "labels": ["chat","frontend"],
+    "assignee": ""
+  }
+]
