@@ -1,42 +1,363 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>文书生成 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>文书生成 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <h2>文书生成（模板填充并下载）</h2>
-  <select id="tpl"></select>
-  <div id="form"></div>
-  <button id="gen">生成并下载</button>
-  <div id="preview"></div>
-  <script src="api-client.js"></script>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">文书生成</h2>
+            <p class="text-secondary mt-sm">选择模板快速生成劳动法相关文书</p>
+          </div>
+          <a href="index.html" class="btn btn-ghost">
+            ← 返回首页
+          </a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;" class="doc-gen-container">
+          <div>
+            <div class="card">
+              <h3 class="card-title">选择模板</h3>
+              <div id="templateCategories"></div>
+              <div id="templateList" class="mt-lg"></div>
+            </div>
+          </div>
+
+          <div>
+            <div id="templateForm" class="card hidden">
+              <div class="card-header">
+                <h3 class="card-title" id="templateName">模板表单</h3>
+                <div class="badge badge-primary" id="templateCategory"></div>
+              </div>
+              <div class="card-body">
+                <div id="templateDescription" class="text-secondary mb-lg"></div>
+                <form id="docForm">
+                  <div id="formFields"></div>
+                  <div class="btn-group mt-xl">
+                    <button type="button" id="previewBtn" class="btn btn-secondary">
+                      👁️ 预览
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                      📄 生成文档
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div id="documentPreview" class="card hidden">
+              <div class="card-header">
+                <h3 class="card-title">文档预览</h3>
+                <button id="closePreview" class="btn btn-sm btn-ghost">关闭</button>
+              </div>
+              <div class="card-body">
+                <div id="previewContent" style="white-space: pre-wrap; line-height: 1.8; padding: 20px; background: #f9fafb; border-radius: 8px;"></div>
+                <div class="mt-lg btn-group">
+                  <button id="downloadBtn" class="btn btn-success">
+                    ⬇️ 下载文档
+                  </button>
+                  <button id="editBtn" class="btn btn-secondary">
+                    ✏️ 继续编辑
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="emptyState" class="card">
+              <div class="empty-state">
+                <div class="empty-state-icon">📄</div>
+                <div class="empty-state-title">选择模板开始</div>
+                <div class="empty-state-text">从左侧选择一个文书模板，填写信息后即可生成文档</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    async function loadTemplates(){
-      const tpls = await ApiClient.listTemplates();
-      const s=document.getElementById('tpl');
-      s.innerHTML='';
-      tpls.forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.name; s.appendChild(o); });
-      s.addEventListener('change', ()=> renderForm(s.value));
-      if(tpls[0]) { s.value=tpls[0].id; renderForm(tpls[0].id); }
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const templateList = document.getElementById('templateList');
+    const templateCategories = document.getElementById('templateCategories');
+    const templateForm = document.getElementById('templateForm');
+    const templateName = document.getElementById('templateName');
+    const templateCategory = document.getElementById('templateCategory');
+    const templateDescription = document.getElementById('templateDescription');
+    const formFields = document.getElementById('formFields');
+    const docForm = document.getElementById('docForm');
+    const previewBtn = document.getElementById('previewBtn');
+    const documentPreview = document.getElementById('documentPreview');
+    const previewContent = document.getElementById('previewContent');
+    const closePreview = document.getElementById('closePreview');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const editBtn = document.getElementById('editBtn');
+    const emptyState = document.getElementById('emptyState');
+    
+    let templates = [];
+    let currentTemplate = null;
+    let currentDocument = null;
+    
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
+      }
+      return true;
     }
-    function renderForm(id){
-      ApiClient.getTemplate(id).then(t=>{
-        const f=document.getElementById('form'); f.innerHTML='';
-        (t.fields || []).forEach(field=>{
-          const label=document.createElement('label'); label.textContent=field.title || field.name;
-          const input=document.createElement('input'); input.id='f_'+field.name;
-          f.appendChild(label); f.appendChild(input); f.appendChild(document.createElement('br'));
+    
+    async function updateUserInfo() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        }
+      } catch (error) {
+        console.error('Error updating user info:', error);
+      }
+    }
+    
+    async function loadTemplates() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        templates = await ApiClient.listTemplates();
+        
+        const categories = [...new Set(templates.map(t => t.category || '其他'))];
+        
+        templateCategories.innerHTML = `
+          <div class="form-group">
+            <label class="form-label">文书类别</label>
+            <select id="categoryFilter" class="form-control">
+              <option value="">全部</option>
+              ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+            </select>
+          </div>
+        `;
+        
+        document.getElementById('categoryFilter').addEventListener('change', (e) => {
+          renderTemplates(e.target.value);
+        });
+        
+        renderTemplates();
+        
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+        templateList.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>加载模板失败: ${error.message}</div>
+          </div>
+        `;
+      }
+    }
+    
+    function renderTemplates(categoryFilter = '') {
+      const filtered = categoryFilter 
+        ? templates.filter(t => t.category === categoryFilter)
+        : templates;
+      
+      if (filtered.length === 0) {
+        templateList.innerHTML = '<div class="text-secondary text-center p-lg">暂无模板</div>';
+        return;
+      }
+      
+      templateList.innerHTML = filtered.map(tpl => `
+        <div class="card mb-sm" style="padding: 12px; cursor: pointer;" data-id="${tpl.id}">
+          <div style="font-weight: 600; margin-bottom: 4px;">${tpl.name}</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">${tpl.description || ''}</div>
+        </div>
+      `).join('');
+      
+      templateList.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', () => {
+          const tplId = card.dataset.id;
+          selectTemplate(tplId);
         });
       });
     }
-    document.getElementById('gen').addEventListener('click', async ()=>{
-      const tId = document.getElementById('tpl').value;
-      const t = await ApiClient.getTemplate(tId);
-      const values = {};
-      (t.fields || []).forEach(f=> values[f.name] = document.getElementById('f_'+f.name).value || '');
-      const res = await ApiClient.renderTemplate(tId, values);
-      document.getElementById('preview').innerHTML = res.rendered_html || res.rendered_text;
-      // download as html
-      const blob = new Blob([res.rendered_html || res.rendered_text || ''], { type: 'text/html' });
+    
+    async function selectTemplate(tplId) {
+      try {
+        currentTemplate = await ApiClient.getTemplate(tplId);
+        
+        templateName.textContent = currentTemplate.name;
+        templateCategory.textContent = currentTemplate.category || '其他';
+        templateDescription.textContent = currentTemplate.description || '';
+        
+        renderForm(currentTemplate);
+        
+        emptyState.classList.add('hidden');
+        documentPreview.classList.add('hidden');
+        templateForm.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Failed to load template:', error);
+        alert('加载模板失败: ' + error.message);
+      }
+    }
+    
+    function renderForm(template) {
+      const fields = Array.isArray(template.fields) ? template.fields : [];
+      
+      if (fields.length === 0) {
+        formFields.innerHTML = '<div class="alert alert-warning"><span>⚠️</span><div>此模板没有可填写的字段</div></div>';
+        return;
+      }
+      
+      formFields.innerHTML = fields.map(field => {
+        const fieldName = typeof field === 'string' ? field : field.name;
+        const fieldLabel = typeof field === 'object' && field.label ? field.label : fieldName;
+        const fieldType = typeof field === 'object' && field.type ? field.type : 'text';
+        
+        return `
+          <div class="form-group">
+            <label class="form-label" for="field_${fieldName}">${fieldLabel}</label>
+            ${fieldType === 'textarea' 
+              ? `<textarea id="field_${fieldName}" name="${fieldName}" class="form-control" rows="4"></textarea>`
+              : `<input type="${fieldType}" id="field_${fieldName}" name="${fieldName}" class="form-control" />`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function getFormData() {
+      const formData = new FormData(docForm);
+      const data = {};
+      for (const [key, value] of formData.entries()) {
+        data[key] = value;
+      }
+      return data;
+    }
+    
+    async function previewDocument() {
+      if (!currentTemplate) return;
+      
+      const formData = getFormData();
+      
+      try {
+        previewBtn.disabled = true;
+        previewBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 生成中...';
+        
+        const result = await ApiClient.generateDocument(currentTemplate.id, 'preview', formData);
+        
+        currentDocument = result;
+        
+        previewContent.textContent = result.content || '无内容';
+        
+        templateForm.classList.add('hidden');
+        documentPreview.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Failed to preview document:', error);
+        alert('预览失败: ' + error.message);
+      } finally {
+        previewBtn.disabled = false;
+        previewBtn.innerHTML = '👁️ 预览';
+      }
+    }
+    
+    async function generateDocument(e) {
+      e.preventDefault();
+      
+      if (!currentTemplate) return;
+      
+      const formData = getFormData();
+      const title = `${currentTemplate.name} - ${new Date().toLocaleDateString()}`;
+      
+      try {
+        const submitBtn = e.submitter;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 生成中...';
+        
+        const result = await ApiClient.generateDocument(currentTemplate.id, title, formData);
+        
+        currentDocument = result;
+        
+        previewContent.textContent = result.content || '无内容';
+        
+        templateForm.classList.add('hidden');
+        documentPreview.classList.remove('hidden');
+        
+        alert('文档生成成功！');
+        
+      } catch (error) {
+        console.error('Failed to generate document:', error);
+        alert('生成文档失败: ' + error.message);
+      } finally {
+        const submitBtn = e.submitter;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '📄 生成文档';
+      }
+    }
+    
+    function downloadDocument() {
+      if (!currentDocument) return;
+      
+      const blob = new Blob([currentDocument.content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='document.html'; a.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentDocument.title || 'document'}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    previewBtn.addEventListener('click', previewDocument);
+    docForm.addEventListener('submit', generateDocument);
+    
+    closePreview.addEventListener('click', () => {
+      documentPreview.classList.add('hidden');
+      templateForm.classList.remove('hidden');
     });
-    loadTemplates();
+    
+    editBtn.addEventListener('click', () => {
+      documentPreview.classList.add('hidden');
+      templateForm.classList.remove('hidden');
+    });
+    
+    downloadBtn.addEventListener('click', downloadDocument);
+    
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
+    if (checkLoginStatus()) {
+      updateUserInfo();
+      loadTemplates();
+    }
+    
+    if (window.innerWidth <= 768) {
+      document.querySelector('.doc-gen-container').style.gridTemplateColumns = '1fr';
+    }
   </script>
-</body></html>
+</body>
+</html>

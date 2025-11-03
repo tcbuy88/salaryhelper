@@ -1,118 +1,245 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>登录 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>登录 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <div class="container">
-    <h2>登录 SalaryHelper</h2>
-    <form id="loginForm">
-      <div class="form-group">
-        <label>手机号: 
-          <input type="tel" id="phone" placeholder="请输入手机号" value="13800000000" required />
-        </label>
+  <div class="app-container">
+    <div class="main-content" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+      <div class="container">
+        <div class="text-center mb-xl">
+          <div class="app-logo" style="justify-content: center; font-size: 32px; margin-bottom: 8px;">
+            ⚖️ SalaryHelper
+          </div>
+          <p class="text-secondary">劳动纠纷智能助手</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label class="form-label" for="phone">手机号</label>
+            <input 
+              type="tel" 
+              id="phone" 
+              class="form-control" 
+              placeholder="请输入手机号" 
+              value="13800000000" 
+              maxlength="11"
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <div class="flex justify-between items-center mb-sm">
+              <label class="form-label" for="code" style="margin: 0;">验证码</label>
+              <button 
+                type="button" 
+                id="sendSms" 
+                class="btn btn-sm btn-outline"
+              >
+                发送验证码
+              </button>
+            </div>
+            <input 
+              type="text" 
+              id="code" 
+              class="form-control" 
+              placeholder="请输入6位验证码" 
+              value="123456"
+              maxlength="6"
+              required 
+            />
+            <small id="smsStatus" class="form-text"></small>
+          </div>
+
+          <div class="form-group">
+            <button type="submit" id="loginBtn" class="btn btn-primary btn-lg btn-block">
+              登录
+            </button>
+          </div>
+
+          <div id="error" class="alert alert-error hidden">
+            <span>⚠️</span>
+            <div id="errorText"></div>
+          </div>
+
+          <div class="alert alert-info">
+            <span>ℹ️</span>
+            <div>
+              <strong>测试账号：</strong><br/>
+              手机号：13800000000<br/>
+              验证码：123456
+            </div>
+          </div>
+        </form>
+
+        <div style="margin-top: 24px; text-align: center; padding-top: 16px; border-top: 1px solid var(--border-color);">
+          <button id="guestBtn" class="btn btn-ghost">
+            游客模式进入 →
+          </button>
+        </div>
       </div>
-      <div class="form-group">
-        <button type="button" id="sendSms" class="btn btn-secondary">发送验证码</button>
-        <span id="smsStatus" class="status"></span>
-      </div>
-      <div class="form-group">
-        <label>验证码: 
-          <input type="text" id="code" placeholder="请输入验证码" value="123456" required />
-        </label>
-      </div>
-      <div class="form-group">
-        <button type="submit" id="login" class="btn btn-primary">登录</button>
-      </div>
-    </form>
-    <div class="guest-section">
-      <p><button id="guest" class="btn btn-outline">游客模式进入</button></p>
     </div>
-    <div id="error" class="error-message"></div>
   </div>
   
   <script src="api-client-real.js"></script>
   <script>
-    // DOM elements
     const phoneInput = document.getElementById('phone');
     const codeInput = document.getElementById('code');
     const sendSmsBtn = document.getElementById('sendSms');
-    const loginBtn = document.getElementById('login');
-    const guestBtn = document.getElementById('guest');
-    const errorDiv = document.getElementById('error');
-    const smsStatus = document.getElementById('smsStatus');
+    const loginBtn = document.getElementById('loginBtn');
     const loginForm = document.getElementById('loginForm');
+    const guestBtn = document.getElementById('guestBtn');
+    const errorDiv = document.getElementById('error');
+    const errorText = document.getElementById('errorText');
+    const smsStatus = document.getElementById('smsStatus');
     
-    // Show error message
+    let countdown = 0;
+    let countdownInterval = null;
+    
     function showError(message) {
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
+      errorText.textContent = message;
+      errorDiv.classList.remove('hidden');
       setTimeout(() => {
-        errorDiv.style.display = 'none';
+        errorDiv.classList.add('hidden');
       }, 5000);
     }
     
-    // Send SMS
+    function startCountdown() {
+      countdown = 60;
+      sendSmsBtn.disabled = true;
+      
+      const updateButton = () => {
+        sendSmsBtn.textContent = `${countdown}秒后重试`;
+        countdown--;
+        
+        if (countdown < 0) {
+          clearInterval(countdownInterval);
+          sendSmsBtn.disabled = false;
+          sendSmsBtn.textContent = '发送验证码';
+        }
+      };
+      
+      updateButton();
+      countdownInterval = setInterval(updateButton, 1000);
+    }
+    
     sendSmsBtn.addEventListener('click', async () => {
       const phone = phoneInput.value.trim();
+      
       if (!phone) {
         showError('请输入手机号');
+        phoneInput.focus();
+        return;
+      }
+      
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+        showError('请输入有效的手机号');
+        phoneInput.focus();
         return;
       }
       
       try {
         sendSmsBtn.disabled = true;
         smsStatus.textContent = '发送中...';
+        smsStatus.className = 'form-text text-secondary';
         
         const response = await ApiClient.sendSms(phone);
-        smsStatus.textContent = '验证码已发送';
-        alert(`验证码已发送（模拟）: 123456`);
         
-        // Enable code input
+        smsStatus.textContent = '✓ 验证码已发送（模拟）';
+        smsStatus.className = 'form-text text-success';
+        
+        if (phone === '13800000000') {
+          setTimeout(() => {
+            smsStatus.textContent = '验证码：123456';
+            smsStatus.className = 'form-text text-primary';
+          }, 500);
+        }
+        
         codeInput.focus();
+        startCountdown();
+        
       } catch (error) {
         smsStatus.textContent = '';
         showError('发送验证码失败: ' + error.message);
-      } finally {
         sendSmsBtn.disabled = false;
       }
     });
     
-    // Login
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const phone = phoneInput.value.trim();
       const code = codeInput.value.trim();
       
-      if (!phone || !code) {
-        showError('请填写手机号和验证码');
+      if (!phone) {
+        showError('请输入手机号');
+        phoneInput.focus();
+        return;
+      }
+      
+      if (!code) {
+        showError('请输入验证码');
+        codeInput.focus();
+        return;
+      }
+      
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+        showError('请输入有效的手机号');
+        phoneInput.focus();
+        return;
+      }
+      
+      if (!/^\d{6}$/.test(code)) {
+        showError('请输入6位验证码');
+        codeInput.focus();
         return;
       }
       
       try {
         loginBtn.disabled = true;
-        loginBtn.textContent = '登录中...';
+        loginBtn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; border-width: 2px; margin: 0;"></div> 登录中...';
         
         const result = await ApiClient.login(phone, code);
         console.log('Login successful:', result);
         
-        // Redirect to main page
-        window.location.href = '/static/index.html';
+        setTimeout(() => {
+          window.location.href = '/static/index.html';
+        }, 300);
+        
       } catch (error) {
         showError('登录失败: ' + error.message);
-      } finally {
         loginBtn.disabled = false;
         loginBtn.textContent = '登录';
       }
     });
     
-    // Guest mode
     guestBtn.addEventListener('click', () => {
-      // For guest mode, we can use a mock login or redirect directly
-      alert('游客模式暂未实现，请使用手机号登录');
-      // Alternatively: window.location.href = '/static/index.html';
+      phoneInput.value = '13800000000';
+      codeInput.value = '123456';
+      loginForm.dispatchEvent(new Event('submit'));
     });
     
-    // Check if already logged in
     if (ApiClient.isLoggedIn()) {
       window.location.href = '/static/index.html';
     }
+    
+    phoneInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+    
+    codeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+    
+    phoneInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendSmsBtn.click();
+      }
+    });
   </script>
-</body></html>
+</body>
+</html>

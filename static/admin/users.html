@@ -1,5 +1,92 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Users</title><link rel="stylesheet" href="../styles.css"/></head>
-<body><h2>用户管理（Demo）</h2><div id="list"></div><script src="../api-client.js"></script><script>
-  async function load(){ const u = await ApiClient.adminListUsers(); document.getElementById('list').innerHTML=JSON.stringify(u,null,2); }
-  load();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>用户管理 - SalaryHelper Admin</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">⚖️ SalaryHelper Admin</a>
+        <div class="user-info">
+          <span class="badge badge-warning">管理员</span>
+          <a href="index.html" class="btn btn-sm btn-ghost">返回后台首页</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">用户管理</h2>
+            <p class="text-secondary mt-sm">查看和管理所有用户账号</p>
+          </div>
+          <button id="refreshBtn" class="btn btn-primary">🔄 刷新</button>
+        </div>
+
+        <div class="card">
+          <div id="userTableContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../api-client-real.js"></script>
+  <script>
+    async function loadUsers() {
+      const container = document.getElementById('userTableContainer');
+      try {
+        container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>加载中...</div></div>';
+        const users = await ApiClient.adminListUsers();
+        
+        if (users.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">暂无用户</div></div>';
+          return;
+        }
+        
+        container.innerHTML = `
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>手机号</th>
+                  <th>用户名</th>
+                  <th>注册时间</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${users.map(user => `
+                  <tr>
+                    <td>${user.id.substring(0, 8)}...</td>
+                    <td>${user.phone}</td>
+                    <td>${user.name || '-'}</td>
+                    <td>${new Date(user.created_at).toLocaleString('zh-CN')}</td>
+                    <td><span class="badge badge-success">正常</span></td>
+                    <td>
+                      <div class="table-actions">
+                        <button class="btn btn-sm btn-outline" onclick="alert('查看用户详情')">查看</button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (error) {
+        container.innerHTML = `<div class="alert alert-error"><span>⚠️</span><div>加载失败: ${error.message}</div></div>`;
+      }
+    }
+    
+    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+    loadUsers();
+  </script>
+</body>
+</html>

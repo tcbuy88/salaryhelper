@@ -1,21 +1,375 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>支付 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>支付充值 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <h2>支付 / 充值（本地模拟）</h2>
-  <button id="buy">创建充值订单 1 元</button>
-  <div id="status"></div>
-  <script src="api-client.js"></script>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">支付充值</h2>
+            <p class="text-secondary mt-sm">购买咨询服务和文书生成套餐</p>
+          </div>
+          <a href="index.html" class="btn btn-ghost">
+            ← 返回首页
+          </a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;" class="payment-container">
+          <div>
+            <div class="card mb-lg">
+              <h3 class="card-title">选择服务套餐</h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                <div class="card package-card" data-type="consultation" data-amount="99" style="cursor: pointer; transition: all 0.2s;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">💬</div>
+                    <h4>基础咨询</h4>
+                    <div class="stat-value" style="color: var(--primary-color); font-size: 28px; margin: 12px 0;">
+                      ¥99
+                    </div>
+                    <div class="text-secondary" style="font-size: 13px;">
+                      • 10次AI对话咨询<br/>
+                      • 基础法律建议<br/>
+                      • 7天有效期
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card package-card" data-type="document" data-amount="199" style="cursor: pointer; transition: all 0.2s;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">📄</div>
+                    <h4>文书套餐</h4>
+                    <div class="stat-value" style="color: var(--primary-color); font-size: 28px; margin: 12px 0;">
+                      ¥199
+                    </div>
+                    <div class="text-secondary" style="font-size: 13px;">
+                      • 5份文书生成<br/>
+                      • 专业模板<br/>
+                      • 30天有效期
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card package-card" data-type="premium" data-amount="499" style="cursor: pointer; transition: all 0.2s;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">⭐</div>
+                    <h4>高级会员</h4>
+                    <div class="stat-value" style="color: var(--primary-color); font-size: 28px; margin: 12px 0;">
+                      ¥499
+                    </div>
+                    <div class="text-secondary" style="font-size: 13px;">
+                      • 无限AI对话<br/>
+                      • 无限文书生成<br/>
+                      • 90天有效期
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card package-card" data-type="vip" data-amount="999" style="cursor: pointer; transition: all 0.2s;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">👑</div>
+                    <h4>VIP会员</h4>
+                    <div class="stat-value" style="color: var(--primary-color); font-size: 28px; margin: 12px 0;">
+                      ¥999
+                    </div>
+                    <div class="text-secondary" style="font-size: 13px;">
+                      • VIP专属服务<br/>
+                      • 优先响应<br/>
+                      • 365天有效期
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="paymentSection" class="card hidden">
+              <h3 class="card-title">支付方式</h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="card payment-method" data-method="wechat" style="cursor: pointer; padding: 20px; text-align: center;">
+                  <div style="font-size: 48px; margin-bottom: 8px;">💚</div>
+                  <div style="font-weight: 600;">微信支付</div>
+                </div>
+                <div class="card payment-method" data-method="alipay" style="cursor: pointer; padding: 20px; text-align: center;">
+                  <div style="font-size: 48px; margin-bottom: 8px;">💙</div>
+                  <div style="font-weight: 600;">支付宝</div>
+                </div>
+              </div>
+              <button id="confirmPayBtn" class="btn btn-primary btn-block btn-lg" disabled>
+                确认支付
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card mb-lg">
+              <h3 class="card-title">订单信息</h3>
+              <div id="orderInfo" class="text-secondary text-center p-xl">
+                请选择服务套餐
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">我的订单</h3>
+              <div id="orderHistory"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="paymentModal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">支付确认</h3>
+          <button class="modal-close" onclick="document.getElementById('paymentModal').classList.add('hidden')">&times;</button>
+        </div>
+        <div class="modal-body text-center">
+          <div id="qrCode" style="font-size: 120px; margin: 24px 0;">📱</div>
+          <div id="paymentAmount" class="stat-value mb-lg">¥0</div>
+          <div class="text-secondary mb-xl">
+            这是模拟支付环境<br/>
+            点击下方按钮完成支付
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelPayBtn" class="btn btn-secondary">取消</button>
+          <button id="mockPayBtn" class="btn btn-success">模拟支付成功</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    document.getElementById('buy').addEventListener('click', async ()=>{
-      const order = await ApiClient.createOrder({ sku: 'demo_1', amount_cents: 100 });
-      // open mock payment dialog
-      const ok = confirm('模拟支付：是否支付 1.00 元？');
-      if(ok){
-        await ApiClient._mockPaymentCallback(order.id, true);
-        document.getElementById('status').textContent='支付成功';
-      } else {
-        await ApiClient._mockPaymentCallback(order.id, false);
-        document.getElementById('status').textContent='支付取消';
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const paymentSection = document.getElementById('paymentSection');
+    const orderInfo = document.getElementById('orderInfo');
+    const orderHistory = document.getElementById('orderHistory');
+    const confirmPayBtn = document.getElementById('confirmPayBtn');
+    const paymentModal = document.getElementById('paymentModal');
+    const qrCode = document.getElementById('qrCode');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const cancelPayBtn = document.getElementById('cancelPayBtn');
+    const mockPayBtn = document.getElementById('mockPayBtn');
+    
+    let selectedPackage = null;
+    let selectedMethod = null;
+    let currentOrderId = null;
+    
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
+      }
+      return true;
+    }
+    
+    async function updateUserInfo() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        }
+      } catch (error) {
+        console.error('Error updating user info:', error);
+      }
+    }
+    
+    async function loadOrderHistory() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const orders = await ApiClient.listOrders();
+        
+        if (orders.length === 0) {
+          orderHistory.innerHTML = '<div class="empty-state" style="padding: 24px;"><div class="text-secondary">暂无订单</div></div>';
+          return;
+        }
+        
+        orderHistory.innerHTML = orders.slice(0, 5).map(order => `
+          <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+            <div class="flex justify-between items-center mb-sm">
+              <div style="font-size: 13px; font-weight: 600;">${order.product_type}</div>
+              <div class="badge ${order.status === 'paid' ? 'badge-success' : 'badge-warning'}">
+                ${order.status === 'paid' ? '已支付' : '待支付'}
+              </div>
+            </div>
+            <div class="text-secondary" style="font-size: 12px;">
+              <div>¥${order.amount.toFixed(2)}</div>
+              <div>${new Date(order.created_at).toLocaleString('zh-CN')}</div>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        orderHistory.innerHTML = '<div class="text-secondary text-center p-lg">加载失败</div>';
+      }
+    }
+    
+    document.querySelectorAll('.package-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.package-card').forEach(c => {
+          c.style.borderColor = 'var(--border-color)';
+          c.style.boxShadow = 'var(--shadow-sm)';
+        });
+        
+        card.style.borderColor = 'var(--primary-color)';
+        card.style.boxShadow = '0 0 0 2px var(--primary-light)';
+        
+        selectedPackage = {
+          type: card.dataset.type,
+          amount: parseFloat(card.dataset.amount),
+          name: card.querySelector('h4').textContent
+        };
+        
+        updateOrderInfo();
+        paymentSection.classList.remove('hidden');
+      });
+    });
+    
+    document.querySelectorAll('.payment-method').forEach(method => {
+      method.addEventListener('click', () => {
+        document.querySelectorAll('.payment-method').forEach(m => {
+          m.style.borderColor = 'var(--border-color)';
+        });
+        
+        method.style.borderColor = 'var(--primary-color)';
+        
+        selectedMethod = method.dataset.method;
+        confirmPayBtn.disabled = false;
+      });
+    });
+    
+    function updateOrderInfo() {
+      if (!selectedPackage) return;
+      
+      orderInfo.innerHTML = `
+        <div style="text-align: left;">
+          <div class="mb-lg">
+            <div class="form-label">服务套餐</div>
+            <div style="font-weight: 600;">${selectedPackage.name}</div>
+          </div>
+          <div class="mb-lg">
+            <div class="form-label">支付金额</div>
+            <div class="stat-value" style="color: var(--primary-color);">¥${selectedPackage.amount.toFixed(2)}</div>
+          </div>
+          <div class="alert alert-info">
+            <span>ℹ️</span>
+            <div><small>这是演示环境，实际不会扣费</small></div>
+          </div>
+        </div>
+      `;
+    }
+    
+    confirmPayBtn.addEventListener('click', async () => {
+      if (!selectedPackage || !selectedMethod) return;
+      
+      try {
+        confirmPayBtn.disabled = true;
+        confirmPayBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 创建订单...';
+        
+        const order = await ApiClient.createOrder({
+          product_type: selectedPackage.type,
+          amount: selectedPackage.amount,
+          payment_method: selectedMethod
+        });
+        
+        currentOrderId = order.order_id || order.id;
+        
+        paymentAmount.textContent = `¥${selectedPackage.amount.toFixed(2)}`;
+        qrCode.textContent = selectedMethod === 'wechat' ? '💚' : '💙';
+        
+        paymentModal.classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Failed to create order:', error);
+        alert('创建订单失败: ' + error.message);
+      } finally {
+        confirmPayBtn.disabled = false;
+        confirmPayBtn.innerHTML = '确认支付';
       }
     });
+    
+    mockPayBtn.addEventListener('click', async () => {
+      if (!currentOrderId) return;
+      
+      try {
+        mockPayBtn.disabled = true;
+        mockPayBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 处理中...';
+        
+        await ApiClient.payOrder(currentOrderId);
+        
+        paymentModal.classList.add('hidden');
+        
+        alert('支付成功！');
+        
+        selectedPackage = null;
+        selectedMethod = null;
+        currentOrderId = null;
+        
+        paymentSection.classList.add('hidden');
+        orderInfo.innerHTML = '<div class="text-secondary text-center p-xl">请选择服务套餐</div>';
+        
+        document.querySelectorAll('.package-card').forEach(c => {
+          c.style.borderColor = 'var(--border-color)';
+          c.style.boxShadow = 'var(--shadow-sm)';
+        });
+        
+        document.querySelectorAll('.payment-method').forEach(m => {
+          m.style.borderColor = 'var(--border-color)';
+        });
+        
+        await loadOrderHistory();
+        
+      } catch (error) {
+        console.error('Payment failed:', error);
+        alert('支付失败: ' + error.message);
+      } finally {
+        mockPayBtn.disabled = false;
+        mockPayBtn.innerHTML = '模拟支付成功';
+      }
+    });
+    
+    cancelPayBtn.addEventListener('click', () => {
+      paymentModal.classList.add('hidden');
+    });
+    
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
+    if (checkLoginStatus()) {
+      updateUserInfo();
+      loadOrderHistory();
+    }
+    
+    if (window.innerWidth <= 768) {
+      document.querySelector('.payment-container').style.gridTemplateColumns = '1fr';
+    }
   </script>
-</body></html>
+</body>
+</html>

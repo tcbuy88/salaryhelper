@@ -1,5 +1,48 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>KB</title><link rel="stylesheet" href="../styles.css"/></head>
-<body><h2>知识管理（Demo）</h2><div id="list"></div><script src="../api-client.js"></script><script>
-  async function load(){ const k = await ApiClient.listKb(); document.getElementById('list').innerHTML=JSON.stringify(k,null,2); }
-  load();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>知识库管理 - SalaryHelper Admin</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">⚖️ SalaryHelper Admin</a>
+        <div class="user-info">
+          <span class="badge badge-warning">管理员</span>
+          <a href="index.html" class="btn btn-sm btn-ghost">返回后台首页</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">知识库管理</h2>
+            <p class="text-secondary mt-sm">管理劳动法知识库内容</p>
+          </div>
+          <button class="btn btn-primary">➕ 添加文章</button>
+        </div>
+
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <div class="empty-state-title">知识库管理</div>
+            <div class="empty-state-text">
+              知识库内容管理功能开发中<br/>
+              您可以管理劳动法相关的文章、案例和常见问题解答
+            </div>
+            <button class="btn btn-outline mt-lg" onclick="alert('功能开发中...')">
+              了解更多
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
