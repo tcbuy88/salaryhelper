@@ -1,0 +1,107 @@
+version: "3.8"
+
+services:
+  # 前端服务
+  frontend:
+    build:
+      context: ./static
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/ssl/certs:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - salaryhelper-network
+
+  # 后端服务
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./logs/app:/var/log/salaryhelper
+      - uploads:/tmp/salaryhelper_uploads
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - salaryhelper-network
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=salaryhelper
+      - POSTGRES_USER=salaryhelper
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - salaryhelper-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - salaryhelper-network
+
+  # pgBouncer 连接池
+  pgbouncer:
+    image: bitnami/pgbouncer:latest
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT_NUMBER=5432
+      - DATABASE_NAME=salaryhelper
+      - DATABASE_USER=salaryhelper
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_MAX_CLIENT_CONN=100
+      - PGBOUNCER_DEFAULT_POOL_SIZE=20
+    ports:
+      - "6432:6432"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - salaryhelper-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+
+networks:
+  salaryhelper-network:
+    driver: bridge

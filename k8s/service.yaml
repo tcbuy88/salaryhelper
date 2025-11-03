@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: salaryhelper-backend-service
+  namespace: salaryhelper
+  labels:
+    app: salaryhelper-backend
+spec:
+  selector:
+    app: salaryhelper-backend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: salaryhelper
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+  - name: postgres
+    protocol: TCP
+    port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: salaryhelper
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+  - name: redis
+    protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP

@@ -99,6 +99,10 @@ salaryhelper/
 │   ├── styles.css         # 样式文件
 │   └── ...               # 其他页面
 ├── docs/                  # 项目文档
+│   ├── DEPLOYMENT_PLAN.md # 部署方案指南
+│   ├── API_REFERENCE.md   # API参考文档
+│   ├── database-design.md # 数据库设计
+│   └── ...               # 其他文档
 ├── test_api.py           # API测试脚本
 ├── start_demo.sh         # 一键启动脚本
 └── README.md             # 项目说明
@@ -122,6 +126,20 @@ python test_api.py
 ## 📋 开发进度
 
 详细开发进度请查看 [DEVELOPMENT_PROGRESS.md](DEVELOPMENT_PROGRESS.md)
+
+## 🚀 生产部署
+
+### 部署指南
+📖 **[完整部署方案](docs/DEPLOYMENT_PLAN.md)** - 生产环境部署蓝图，包含前端、后端、数据库、容器化、CI/CD、安全监控等完整指南
+
+### 快速部署
+```bash
+# 生产环境部署
+docker compose -f docker-compose.prod.yml up -d
+
+# Kubernetes 部署
+kubectl apply -f k8s/
+```
 
 ### 当前版本：v0.2.0 (MVP完整版)
 - ✅ Auth模块 - 100%完成
