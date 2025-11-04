@@ -1,75 +1,244 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>SalaryHelper DEMO</title>
-<link rel="stylesheet" href="styles.css"/></head>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SalaryHelper - 劳动纠纷智能助手</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <header>
-    <h1>SalaryHelper (DEMO)</h1>
-    <div id="userInfo" style="text-align: right; margin-bottom: 8px;"></div>
-  </header>
-  <main>
-    <div id="welcome">
-      <p>欢迎使用 SalaryHelper DEMO。示例入口：</p>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="text-center mb-xl">
+          <h1 class="mb-md">劳动纠纷智能助手</h1>
+          <p class="text-secondary">一站式劳动法咨询、文书生成和案件管理服务</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">我的会话</div>
+            <div class="stat-value" id="conversationCount">-</div>
+            <div class="stat-change text-secondary">
+              <span>点击下方开始咨询</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">生成文书</div>
+            <div class="stat-value" id="documentCount">-</div>
+            <div class="stat-change text-secondary">
+              <span>快速生成法律文书</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">我的订单</div>
+            <div class="stat-value" id="orderCount">-</div>
+            <div class="stat-change text-secondary">
+              <span>查看消费记录</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <a href="conversations.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">💬</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">AI 对话咨询</h3>
+                <p class="text-secondary mb-0">与智能助手交流，获取专业的劳动法建议和解决方案</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="docgen.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">📄</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">文书生成</h3>
+                <p class="text-secondary mb-0">基于模板快速生成劳动仲裁、申诉等各类法律文书</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="evidence.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">📁</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">证据管理</h3>
+                <p class="text-secondary mb-0">安全上传和管理您的证据材料，支持多种文件格式</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="kb.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">📚</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">知识库</h3>
+                <p class="text-secondary mb-0">浏览劳动法相关知识、案例分析和常见问题解答</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="payment.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">💳</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">支付充值</h3>
+                <p class="text-secondary mb-0">购买咨询服务、文书生成套餐等增值服务</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="me.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 32px;">👤</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">用户中心</h3>
+                <p class="text-secondary mb-0">管理个人信息、查看使用记录和账户设置</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+          <h3 style="color: white; margin-bottom: 8px;">💼 管理后台</h3>
+          <p style="margin-bottom: 16px; opacity: 0.9;">管理员可以访问后台查看系统数据和管理用户</p>
+          <a href="admin/index.html" class="btn btn-outline" style="background: white; color: #667eea; border-color: white;">
+            进入管理后台 →
+          </a>
+        </div>
+
+        <div class="alert alert-info mt-xl">
+          <span>ℹ️</span>
+          <div>
+            <strong>演示说明：</strong>
+            这是一个演示系统，所有数据都是模拟的。实际生产环境需要接入真实的AI模型、数据库和支付系统。
+          </div>
+        </div>
+      </div>
     </div>
-    <ul>
-      <li><a href="conversations.html">会话 / 聊天</a></li>
-      <li><a href="kb.html">知识库</a></li>
-      <li><a href="docgen.html">文书生成</a></li>
-      <li><a href="evidence.html">证据库</a></li>
-      <li><a href="payment.html">支付 / 充值（模拟）</a></li>
-      <li><a href="me.html">用户中心</a></li>
-      <li><a href="admin/index.html">管理台 Demo</a></li>
-    </ul>
-    <div style="margin-top: 20px;">
-      <button id="logout" class="btn btn-outline">退出登录</button>
+
+    <div class="bottom-nav" style="display: none;" id="bottomNav">
+      <div class="bottom-nav-content">
+        <a href="index.html" class="bottom-nav-item active">
+          <div class="bottom-nav-icon">🏠</div>
+          <div class="bottom-nav-label">首页</div>
+        </a>
+        <a href="conversations.html" class="bottom-nav-item">
+          <div class="bottom-nav-icon">💬</div>
+          <div class="bottom-nav-label">对话</div>
+        </a>
+        <a href="docgen.html" class="bottom-nav-item">
+          <div class="bottom-nav-icon">📄</div>
+          <div class="bottom-nav-label">文书</div>
+        </a>
+        <a href="me.html" class="bottom-nav-item">
+          <div class="bottom-nav-icon">👤</div>
+          <div class="bottom-nav-label">我的</div>
+        </a>
+      </div>
     </div>
-  </main>
+  </div>
+  
   <script src="api-client-real.js"></script>
   <script>
-    // DOM elements
-    const userInfo = document.getElementById('userInfo');
-    const logoutBtn = document.getElementById('logout');
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const conversationCount = document.getElementById('conversationCount');
+    const documentCount = document.getElementById('documentCount');
+    const orderCount = document.getElementById('orderCount');
+    const bottomNav = document.getElementById('bottomNav');
     
-    // Update user info display
     async function updateUserInfo() {
-      if (ApiClient.isLoggedIn()) {
-        try {
-          const user = ApiClient.getCurrentUserSync();
-          if (user) {
-            userInfo.innerHTML = `欢迎，${user.name || user.phone}`;
-          } else {
-            // Try to get fresh user data
-            try {
-              const freshUser = await ApiClient.getCurrentUser();
-              userInfo.innerHTML = `欢迎，${freshUser.name || freshUser.phone}`;
-            } catch (error) {
-              console.error('Failed to get current user:', error);
-              userInfo.innerHTML = '';
-            }
+      if (!ApiClient.isLoggedIn()) {
+        userName.innerHTML = '<a href="login.html" style="color: var(--primary-color);">请登录</a>';
+        return;
+      }
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        } else {
+          try {
+            const freshUser = await ApiClient.getCurrentUser();
+            userName.textContent = freshUser.name || freshUser.phone;
+          } catch (error) {
+            console.error('Failed to get current user:', error);
+            userName.innerHTML = '<a href="login.html" style="color: var(--primary-color);">请登录</a>';
           }
-        } catch (error) {
-          console.error('Error updating user info:', error);
-          userInfo.innerHTML = '';
         }
-      } else {
-        userInfo.innerHTML = '请先 <a href="login.html">登录</a>';
+      } catch (error) {
+        console.error('Error updating user info:', error);
+        userName.innerHTML = '<a href="login.html" style="color: var(--primary-color);">请登录</a>';
       }
     }
     
-    // Logout
+    async function loadStats() {
+      if (!ApiClient.isLoggedIn()) {
+        conversationCount.textContent = '0';
+        documentCount.textContent = '0';
+        orderCount.textContent = '0';
+        return;
+      }
+      
+      try {
+        const [conversations, documents, orders] = await Promise.all([
+          ApiClient.listConversations().catch(() => []),
+          ApiClient.listDocuments().catch(() => []),
+          ApiClient.listOrders().catch(() => [])
+        ]);
+        
+        conversationCount.textContent = conversations.length;
+        documentCount.textContent = documents.length;
+        orderCount.textContent = orders.length;
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+        conversationCount.textContent = '0';
+        documentCount.textContent = '0';
+        orderCount.textContent = '0';
+      }
+    }
+    
     logoutBtn.addEventListener('click', () => {
-      ApiClient.logout();
-      window.location.href = '/static/login.html';
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
     });
     
-    // Initialize
-    updateUserInfo();
-    
-    // Check login status and redirect if needed
-    if (!ApiClient.isLoggedIn()) {
-      // Allow access to index page without login for demo purposes
-      console.log('User not logged in, some features may be limited');
+    if (window.innerWidth <= 768) {
+      bottomNav.style.display = 'block';
+      document.querySelector('.main-content').style.paddingBottom = '80px';
     }
+    
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768) {
+        bottomNav.style.display = 'block';
+        document.querySelector('.main-content').style.paddingBottom = '80px';
+      } else {
+        bottomNav.style.display = 'none';
+        document.querySelector('.main-content').style.paddingBottom = '24px';
+      }
+    });
+    
+    updateUserInfo();
+    loadStats();
   </script>
 </body>
 </html>

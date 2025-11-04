@@ -1,11 +1,137 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Admin - SalaryHelper DEMO</title><link rel="stylesheet" href="../styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>管理后台 - SalaryHelper</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
 <body>
-  <h2>管理台 Demo</h2>
-  <ul>
-    <li><a href="dashboard.html">仪表盘</a></li>
-    <li><a href="users.html">用户管理</a></li>
-    <li><a href="conversations.html">会话管理</a></li>
-    <li><a href="kb.html">知识管理</a></li>
-    <li><a href="orders.html">订单管理</a></li>
-  </ul>
-</body></html>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="/static/index.html" class="app-logo">
+          ⚖️ SalaryHelper Admin
+        </a>
+        <div class="user-info">
+          <span class="badge badge-warning">管理员</span>
+          <a href="/static/index.html" class="btn btn-sm btn-ghost">返回前台</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="text-center mb-xl">
+          <h1 class="mb-md">SalaryHelper 管理后台</h1>
+          <p class="text-secondary">系统管理和数据监控中心</p>
+        </div>
+
+        <div class="stats-grid mb-xl">
+          <div class="stat-card">
+            <div class="stat-label">总用户数</div>
+            <div class="stat-value" style="color: var(--primary-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 实时统计</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">总会话数</div>
+            <div class="stat-value" style="color: var(--success-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 实时统计</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">总订单数</div>
+            <div class="stat-value" style="color: var(--warning-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 实时统计</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">系统状态</div>
+            <div class="stat-value" style="font-size: 24px;"><span class="badge badge-success">运行正常</span></div>
+            <div class="stat-change text-secondary">
+              <span>在线服务</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          <a href="dashboard.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">📊</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">数据仪表盘</h3>
+                <p class="text-secondary mb-0">查看系统整体运营数据和统计图表</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="users.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">👥</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">用户管理</h3>
+                <p class="text-secondary mb-0">管理用户账号、查看用户信息和活动记录</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="conversations.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">💬</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">会话管理</h3>
+                <p class="text-secondary mb-0">查看和管理所有用户的对话会话记录</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="orders.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">💰</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">订单管理</h3>
+                <p class="text-secondary mb-0">查看订单记录、支付状态和收入统计</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="kb.html" class="card" style="text-decoration: none; color: inherit;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">📚</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">知识库管理</h3>
+                <p class="text-secondary mb-0">管理劳动法知识库内容和文章</p>
+              </div>
+            </div>
+          </a>
+
+          <div class="card" style="opacity: 0.6; cursor: not-allowed;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="font-size: 40px;">⚙️</div>
+              <div style="flex: 1;">
+                <h3 class="card-title">系统设置</h3>
+                <p class="text-secondary mb-0">配置系统参数和功能设置（开发中）</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning mt-xl">
+          <span>⚠️</span>
+          <div>
+            <strong>管理员提示：</strong>
+            这是演示环境的管理后台，数据为模拟数据。生产环境需要添加权限验证和审计日志功能。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

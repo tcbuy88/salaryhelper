@@ -1,5 +1,194 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Dashboard</title><link rel="stylesheet" href="../styles.css"/></head>
-<body><h2>仪表盘（Demo）</h2><div id="metrics"></div><script src="../api-client.js"></script><script>
-  async function load(){ const m=await ApiClient.getAdminMetrics(); document.getElementById('metrics').innerHTML=JSON.stringify(m,null,2); }
-  load();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>数据仪表盘 - SalaryHelper Admin</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper Admin
+        </a>
+        <div class="user-info">
+          <span class="badge badge-warning">管理员</span>
+          <a href="index.html" class="btn btn-sm btn-ghost">返回后台首页</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">数据仪表盘</h2>
+            <p class="text-secondary mt-sm">系统运营数据概览</p>
+          </div>
+          <button id="refreshBtn" class="btn btn-primary">
+            🔄 刷新数据
+          </button>
+        </div>
+
+        <div class="stats-grid mb-xl">
+          <div class="stat-card">
+            <div class="stat-label">总用户数</div>
+            <div class="stat-value" id="totalUsers" style="color: var(--primary-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 较昨日增长</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">总会话数</div>
+            <div class="stat-value" id="totalConversations" style="color: var(--success-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 活跃度提升</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">总订单数</div>
+            <div class="stat-value" id="totalOrders" style="color: var(--warning-color);">-</div>
+            <div class="stat-change positive">
+              <span>↑ 持续增长</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">总收入</div>
+            <div class="stat-value" id="totalRevenue" style="color: var(--error-color);">¥-</div>
+            <div class="stat-change positive">
+              <span>↑ 营收增长</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;" class="dashboard-grid">
+          <div class="card">
+            <h3 class="card-title">系统指标</h3>
+            <div id="metricsData"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">快捷操作</h3>
+            <div class="flex flex-col gap-sm">
+              <a href="users.html" class="btn btn-outline btn-block">
+                👥 用户管理
+              </a>
+              <a href="conversations.html" class="btn btn-outline btn-block">
+                💬 会话管理
+              </a>
+              <a href="orders.html" class="btn btn-outline btn-block">
+                💰 订单管理
+              </a>
+              <a href="kb.html" class="btn btn-outline btn-block">
+                📚 知识库管理
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">最近活动</h3>
+          <div id="recentActivity"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../api-client-real.js"></script>
+  <script>
+    const totalUsers = document.getElementById('totalUsers');
+    const totalConversations = document.getElementById('totalConversations');
+    const totalOrders = document.getElementById('totalOrders');
+    const totalRevenue = document.getElementById('totalRevenue');
+    const metricsData = document.getElementById('metricsData');
+    const recentActivity = document.getElementById('recentActivity');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    async function loadDashboard() {
+      try {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 加载中...';
+
+        const [metrics, users, conversations, orders] = await Promise.all([
+          ApiClient.getAdminMetrics().catch(() => ({})),
+          ApiClient.adminListUsers().catch(() => []),
+          ApiClient.adminListConversations().catch(() => []),
+          ApiClient.adminListOrders().catch(() => [])
+        ]);
+
+        totalUsers.textContent = users.length || metrics.total_users || 0;
+        totalConversations.textContent = conversations.length || metrics.total_conversations || 0;
+        totalOrders.textContent = orders.length || metrics.total_orders || 0;
+
+        const revenue = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
+        totalRevenue.textContent = `¥${revenue.toFixed(2)}`;
+
+        metricsData.innerHTML = `
+          <div style="padding: 16px 0;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+              <div>
+                <div class="form-label">今日新增用户</div>
+                <div style="font-size: 20px; font-weight: 600;">${metrics.today_new_users || 0}</div>
+              </div>
+              <div>
+                <div class="form-label">今日活跃用户</div>
+                <div style="font-size: 20px; font-weight: 600;">${metrics.today_active_users || 0}</div>
+              </div>
+              <div>
+                <div class="form-label">今日新增会话</div>
+                <div style="font-size: 20px; font-weight: 600;">${metrics.today_new_conversations || 0}</div>
+              </div>
+              <div>
+                <div class="form-label">今日新增订单</div>
+                <div style="font-size: 20px; font-weight: 600;">${metrics.today_new_orders || 0}</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const recentItems = [
+          ...users.slice(0, 2).map(u => ({ type: '新用户注册', text: `${u.phone} 注册了账号`, time: u.created_at })),
+          ...conversations.slice(0, 2).map(c => ({ type: '新会话', text: `${c.phone || '用户'} 创建了会话`, time: c.created_at })),
+          ...orders.slice(0, 2).map(o => ({ type: '新订单', text: `${o.phone || '用户'} 创建了订单 ¥${o.amount}`, time: o.created_at }))
+        ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 8);
+
+        if (recentItems.length === 0) {
+          recentActivity.innerHTML = '<div class="empty-state" style="padding: 32px;"><div class="text-secondary">暂无最近活动</div></div>';
+        } else {
+          recentActivity.innerHTML = recentItems.map(item => `
+            <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+              <div class="flex justify-between items-center">
+                <div>
+                  <span class="badge badge-primary">${item.type}</span>
+                  <span class="ml-md">${item.text}</span>
+                </div>
+                <div class="text-secondary" style="font-size: 13px;">${new Date(item.time).toLocaleString('zh-CN')}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+        metricsData.innerHTML = `<div class="alert alert-error"><span>⚠️</span><div>加载数据失败: ${error.message}</div></div>`;
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '🔄 刷新数据';
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadDashboard);
+
+    loadDashboard();
+
+    if (window.innerWidth <= 768) {
+      document.querySelector('.dashboard-grid').style.gridTemplateColumns = '1fr';
+    }
+  </script>
+</body>
+</html>

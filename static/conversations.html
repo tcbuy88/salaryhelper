@@ -1,57 +1,111 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>会话 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 对话咨询 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <div class="container">
-    <header>
-      <h2>会话 / 聊天</h2>
-      <div id="userInfo" style="text-align: right; font-size: 14px;"></div>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
     </header>
-    
-    <div class="nav">
-      <button id="backBtn" class="btn btn-outline">← 返回首页</button>
-      <button id="newConvBtn" class="btn btn-primary">新建会话</button>
-    </div>
-    
-    <div id="convs" class="conversation-list">
-      <h3>会话列表</h3>
-      <div id="convList"></div>
-    </div>
-    
-    <div id="chat" class="chat-container" style="display: none;">
-      <div class="chat-header">
-        <h3 id="chatTitle">会话</h3>
-        <button id="backToList" class="btn btn-outline">← 返回列表</button>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div id="conversationListView">
+          <div class="flex justify-between items-center mb-lg">
+            <div>
+              <h2 class="mb-0">我的会话</h2>
+              <p class="text-secondary mt-sm">与智能助手的对话记录</p>
+            </div>
+            <button id="newConvBtn" class="btn btn-primary">
+              ➕ 新建会话
+            </button>
+          </div>
+
+          <div id="loadingState" class="loading">
+            <div class="loading-spinner"></div>
+            <div>加载中...</div>
+          </div>
+
+          <div id="conversationList" class="conversation-list hidden"></div>
+
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-state-icon">💬</div>
+            <div class="empty-state-title">暂无会话</div>
+            <div class="empty-state-text">点击"新建会话"按钮开始与AI助手对话</div>
+            <button class="btn btn-primary" onclick="document.getElementById('newConvBtn').click()">
+              立即开始
+            </button>
+          </div>
+        </div>
+
+        <div id="chatView" class="hidden">
+          <div class="flex justify-between items-center mb-lg">
+            <button id="backToList" class="btn btn-ghost">
+              ← 返回列表
+            </button>
+            <button id="deleteConvBtn" class="btn btn-sm btn-danger">
+              删除会话
+            </button>
+          </div>
+
+          <div class="card chat-container">
+            <div class="chat-header">
+              <h3 id="chatTitle" class="mb-0">会话</h3>
+              <div class="badge badge-success">AI 在线</div>
+            </div>
+
+            <div id="chatMessages" class="chat-messages"></div>
+
+            <div class="chat-input">
+              <textarea 
+                id="messageInput" 
+                class="form-control"
+                placeholder="输入您的问题..." 
+                rows="2"
+                style="resize: none;"
+              ></textarea>
+              <button id="sendBtn" class="btn btn-primary">
+                发送
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="messageList" class="message-list"></div>
-      <div class="message-input">
-        <textarea id="messageInput" placeholder="输入消息..." rows="3"></textarea>
-        <button id="sendBtn" class="btn btn-primary">发送</button>
-      </div>
-    </div>
-    
-    <div id="loading" style="display: none; text-align: center; padding: 20px;">
-      加载中...
     </div>
   </div>
   
   <script src="api-client-real.js"></script>
   <script>
-    // DOM elements
-    const convsDiv = document.getElementById('convs');
-    const convList = document.getElementById('convList');
-    const chatDiv = document.getElementById('chat');
-    const messageList = document.getElementById('messageList');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
     const newConvBtn = document.getElementById('newConvBtn');
-    const backBtn = document.getElementById('backBtn');
+    const conversationListView = document.getElementById('conversationListView');
+    const chatView = document.getElementById('chatView');
+    const loadingState = document.getElementById('loadingState');
+    const conversationList = document.getElementById('conversationList');
+    const emptyState = document.getElementById('emptyState');
     const backToList = document.getElementById('backToList');
     const chatTitle = document.getElementById('chatTitle');
-    const loading = document.getElementById('loading');
-    const userInfo = document.getElementById('userInfo');
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const deleteConvBtn = document.getElementById('deleteConvBtn');
     
     let currentConvId = null;
+    let conversations = [];
     
-    // Check login status
     function checkLoginStatus() {
       if (!ApiClient.isLoggedIn()) {
         window.location.href = '/static/login.html';
@@ -60,98 +114,146 @@
       return true;
     }
     
-    // Update user info
-    function updateUserInfo() {
-      const user = ApiClient.getCurrentUserSync();
-      if (user) {
-        userInfo.textContent = `${user.name || user.phone}`;
+    async function updateUserInfo() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        }
+      } catch (error) {
+        console.error('Error updating user info:', error);
       }
     }
     
-    // Show/hide loading
-    function setLoading(isLoading) {
-      loading.style.display = isLoading ? 'block' : 'none';
-    }
-    
-    // Render conversations list
-    async function renderConversations() {
+    async function loadConversations() {
       if (!checkLoginStatus()) return;
       
-      setLoading(true);
+      loadingState.classList.remove('hidden');
+      conversationList.classList.add('hidden');
+      emptyState.classList.add('hidden');
+      
       try {
-        const conversations = await ApiClient.listConversations();
-        convList.innerHTML = '';
+        conversations = await ApiClient.listConversations();
         
         if (conversations.length === 0) {
-          convList.innerHTML = '<p style="color: #64748b; text-align: center;">暂无会话，点击"新建会话"开始</p>';
-          return;
+          emptyState.classList.remove('hidden');
+        } else {
+          renderConversations();
+          conversationList.classList.remove('hidden');
         }
-        
-        conversations.forEach(conv => {
-          const convEl = document.createElement('div');
-          convEl.className = 'conversation-item';
-          convEl.innerHTML = `
-            <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; background: white;">
-              <div style="font-weight: 500;">${conv.title}</div>
-              <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                ${new Date(conv.created_at).toLocaleString()}
-              </div>
-            </div>
-          `;
-          convEl.addEventListener('click', () => loadConversation(conv.id, conv.title));
-          convList.appendChild(convEl);
-        });
       } catch (error) {
         console.error('Failed to load conversations:', error);
-        convList.innerHTML = '<p style="color: #dc2626;">加载会话列表失败</p>';
+        conversationList.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>加载会话列表失败: ${error.message}</div>
+          </div>
+        `;
+        conversationList.classList.remove('hidden');
       } finally {
-        setLoading(false);
+        loadingState.classList.add('hidden');
       }
     }
     
-    // Load conversation
-    async function loadConversation(convId, title) {
+    function renderConversations() {
+      conversationList.innerHTML = conversations.map(conv => `
+        <div class="conversation-item" data-id="${conv.id}">
+          <div class="conversation-title">${conv.title || '未命名会话'}</div>
+          <div class="conversation-meta">
+            <span>📅 ${new Date(conv.created_at).toLocaleString('zh-CN')}</span>
+          </div>
+        </div>
+      `).join('');
+      
+      conversationList.querySelectorAll('.conversation-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const convId = item.dataset.id;
+          const conv = conversations.find(c => c.id === convId);
+          openConversation(convId, conv.title);
+        });
+      });
+    }
+    
+    async function createConversation() {
       if (!checkLoginStatus()) return;
       
-      setLoading(true);
+      const title = prompt('请输入会话标题（可选）:', `咨询 - ${new Date().toLocaleString('zh-CN')}`);
+      if (title === null) return;
+      
+      try {
+        newConvBtn.disabled = true;
+        newConvBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 创建中...';
+        
+        const conv = await ApiClient.createConversation(title);
+        await openConversation(conv.id, conv.title);
+      } catch (error) {
+        console.error('Failed to create conversation:', error);
+        alert('创建会话失败: ' + error.message);
+      } finally {
+        newConvBtn.disabled = false;
+        newConvBtn.innerHTML = '➕ 新建会话';
+      }
+    }
+    
+    async function openConversation(convId, title) {
+      if (!checkLoginStatus()) return;
+      
       currentConvId = convId;
+      chatTitle.textContent = title || '会话';
+      
+      conversationListView.classList.add('hidden');
+      chatView.classList.remove('hidden');
+      
+      chatMessages.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>加载消息...</div></div>';
       
       try {
         const data = await ApiClient.getConversation(convId);
-        chatTitle.textContent = title || `会话 ${convId}`;
-        
-        // Show chat, hide list
-        convsDiv.style.display = 'none';
-        chatDiv.style.display = 'block';
-        
-        // Render messages
-        messageList.innerHTML = '';
-        const messages = data.messages || [];
-        
-        messages.forEach(msg => {
-          const msgEl = document.createElement('div');
-          msgEl.className = `message ${msg.sender}`;
-          msgEl.innerHTML = `
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">
-              ${msg.sender === 'user' ? '我' : 'AI助手'} · ${new Date(msg.created_at).toLocaleTimeString()}
-            </div>
-            <div>${msg.content}</div>
-          `;
-          messageList.appendChild(msgEl);
-        });
-        
-        // Scroll to bottom
-        messageList.scrollTop = messageList.scrollHeight;
-        
+        renderMessages(data.messages || []);
       } catch (error) {
         console.error('Failed to load conversation:', error);
-        alert('加载会话失败: ' + error.message);
-      } finally {
-        setLoading(false);
+        chatMessages.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>加载消息失败: ${error.message}</div>
+          </div>
+        `;
       }
+      
+      messageInput.focus();
     }
     
-    // Send message
+    function renderMessages(messages) {
+      if (messages.length === 0) {
+        chatMessages.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">👋</div>
+            <div class="empty-state-title">开始对话</div>
+            <div class="empty-state-text">您好！我是劳动法智能助手，有什么可以帮助您的吗？</div>
+          </div>
+        `;
+        return;
+      }
+      
+      chatMessages.innerHTML = messages.map(msg => {
+        const isUser = msg.sender === 'user';
+        const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+          <div class="message-bubble ${msg.sender}">
+            <div class="message-avatar">${isUser ? '我' : 'AI'}</div>
+            <div class="message-content">
+              <div class="message-meta">${isUser ? '我' : 'AI助手'} · ${time}</div>
+              <div class="message-text">${msg.content}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
     async function sendMessage() {
       if (!checkLoginStatus() || !currentConvId) return;
       
@@ -161,55 +263,53 @@
       const originalText = text;
       messageInput.value = '';
       sendBtn.disabled = true;
-      sendBtn.textContent = '发送中...';
+      sendBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div>';
       
       try {
-        const result = await ApiClient.sendMessage(currentConvId, text);
+        await ApiClient.sendMessage(currentConvId, text);
         
-        // Refresh messages to show both user message and AI reply
-        await loadConversation(currentConvId, chatTitle.textContent);
+        const data = await ApiClient.getConversation(currentConvId);
+        renderMessages(data.messages || []);
         
       } catch (error) {
         console.error('Failed to send message:', error);
         alert('发送消息失败: ' + error.message);
-        // Restore input on error
         messageInput.value = originalText;
       } finally {
         sendBtn.disabled = false;
-        sendBtn.textContent = '发送';
+        sendBtn.innerHTML = '发送';
         messageInput.focus();
       }
     }
     
-    // Create new conversation
-    async function createConversation() {
-      if (!checkLoginStatus()) return;
+    async function deleteConversation() {
+      if (!currentConvId) return;
       
-      const title = prompt('请输入会话标题（可选）:', `会话 ${new Date().toLocaleString()}`);
-      if (title === null) return; // User cancelled
+      if (!confirm('确定要删除这个会话吗？此操作不可恢复。')) {
+        return;
+      }
       
-      setLoading(true);
       try {
-        const conv = await ApiClient.createConversation(title);
-        await renderConversations();
-        await loadConversation(conv.id, conv.title);
+        currentConvId = null;
+        conversationListView.classList.remove('hidden');
+        chatView.classList.add('hidden');
+        alert('会话已删除（模拟）');
+        await loadConversations();
       } catch (error) {
-        console.error('Failed to create conversation:', error);
-        alert('创建会话失败: ' + error.message);
-      } finally {
-        setLoading(false);
+        console.error('Failed to delete conversation:', error);
+        alert('删除会话失败: ' + error.message);
       }
     }
     
-    // Back to list
     function backToConversationList() {
-      chatDiv.style.display = 'none';
-      convsDiv.style.display = 'block';
       currentConvId = null;
+      conversationListView.classList.remove('hidden');
+      chatView.classList.add('hidden');
+      loadConversations();
     }
     
-    // Event listeners
     sendBtn.addEventListener('click', sendMessage);
+    
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -218,13 +318,20 @@
     });
     
     newConvBtn.addEventListener('click', createConversation);
-    backBtn.addEventListener('click', () => window.location.href = '/static/index.html');
     backToList.addEventListener('click', backToConversationList);
+    deleteConvBtn.addEventListener('click', deleteConversation);
     
-    // Initialize
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
     if (checkLoginStatus()) {
       updateUserInfo();
-      renderConversations();
+      loadConversations();
     }
   </script>
-</body></html>
+</body>
+</html>

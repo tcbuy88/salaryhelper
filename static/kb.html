@@ -1,20 +1,279 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>知识库 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>知识库 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <h2>知识库（本地检索示例）</h2>
-  <input id="q" placeholder="搜索关键字"/><button id="s">搜索</button>
-  <div id="list"></div>
-  <script src="api-client.js"></script>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">劳动法知识库</h2>
+            <p class="text-secondary mt-sm">浏览劳动法相关知识、案例分析和常见问题</p>
+          </div>
+          <a href="index.html" class="btn btn-ghost">
+            ← 返回首页
+          </a>
+        </div>
+
+        <div class="card mb-lg">
+          <div class="form-group mb-0">
+            <div class="flex gap-sm">
+              <input 
+                type="search" 
+                id="searchInput" 
+                class="form-control" 
+                placeholder="搜索劳动法相关问题..."
+                style="flex: 1;"
+              />
+              <button id="searchBtn" class="btn btn-primary">
+                🔍 搜索
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 240px 1fr; gap: 24px;" class="kb-container">
+          <div>
+            <div class="card">
+              <h3 class="card-title">分类</h3>
+              <div id="categories" class="flex flex-col gap-sm"></div>
+            </div>
+          </div>
+
+          <div>
+            <div id="articlesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="articleModal" class="modal-overlay hidden">
+      <div class="modal" style="max-width: 800px;">
+        <div class="modal-header">
+          <h3 class="modal-title" id="articleTitle">文章标题</h3>
+          <button class="modal-close" onclick="document.getElementById('articleModal').classList.add('hidden')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="articleContent" style="line-height: 1.8;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    async function search(q){ const items = await ApiClient.listKb(); const el=document.getElementById('list'); el.innerHTML=''; items.filter(i=>!q||i.title.includes(q)||i.content.includes(q)).forEach(it=>{
-      const d=document.createElement('div'); d.innerHTML='<h4>'+it.title+'</h4><p>'+it.content.slice(0,200)+'</p>';
-      const btn=document.createElement('button'); btn.textContent='引用到会话'; btn.addEventListener('click', ()=> {
-        if(window._convId) ApiClient.sendMessage(window._convId, { text: '[引用] '+it.title + '\\n' + it.content.slice(0,200) });
-        alert('已引用（若有打开的会话）');
-      });
-      d.appendChild(btn);
-      el.appendChild(d);
-    }) }
-    document.getElementById('s').addEventListener('click', ()=> search(document.getElementById('q').value));
-    search('');
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const categories = document.getElementById('categories');
+    const articlesList = document.getElementById('articlesList');
+    const articleModal = document.getElementById('articleModal');
+    const articleTitle = document.getElementById('articleTitle');
+    const articleContent = document.getElementById('articleContent');
+    
+    let selectedCategory = '全部';
+    
+    const mockCategories = ['全部', '工资纠纷', '劳动合同', '社保福利', '工伤赔偿', '加班加点', '离职辞退', '常见问题'];
+    
+    const mockArticles = [
+      {
+        id: 1,
+        category: '工资纠纷',
+        title: '用人单位拖欠工资怎么办？',
+        summary: '遇到拖欠工资的情况，劳动者可以通过协商、投诉或劳动仲裁等方式维权...',
+        content: '用人单位拖欠工资是劳动纠纷中最常见的问题之一。根据《劳动法》第50条规定，工资应当以货币形式按月支付给劳动者本人。\n\n解决方案：\n1. 先与用人单位协商解决\n2. 向劳动监察部门投诉\n3. 申请劳动仲裁\n4. 向人民法院起诉\n\n注意事项：\n• 保留工资条、打卡记录等证据\n• 注意时效期限（1年）\n• 可以要求经济补偿'
+      },
+      {
+        id: 2,
+        category: '劳动合同',
+        title: '不签劳动合同有什么后果？',
+        summary: '用人单位应当自用工之日起一个月内订立书面劳动合同，否则需承担法律责任...',
+        content: '根据《劳动合同法》第10条规定，建立劳动关系，应当订立书面劳动合同。\n\n单位不签合同的后果：\n1. 需支付双倍工资（最多11个月）\n2. 视为无固定期限劳动合同\n3. 劳动者可随时解除劳动关系\n\n劳动者权益：\n• 可以要求签订劳动合同\n• 可以要求支付双倍工资\n• 可以主张各项社会保险'
+      },
+      {
+        id: 3,
+        category: '社保福利',
+        title: '公司不缴纳社保怎么办？',
+        summary: '用人单位和劳动者必须依法参加社会保险，缴纳社会保险费...',
+        content: '根据《社会保险法》规定，用人单位应当自用工之日起30日内为其职工向社会保险经办机构申请办理社会保险登记。\n\n维权途径：\n1. 向社保部门投诉举报\n2. 申请劳动仲裁\n3. 要求补缴社保\n\n注意事项：\n• 社保是强制性的\n• 单位承担大部分费用\n• 包括养老、医疗、失业、工伤、生育保险'
+      },
+      {
+        id: 4,
+        category: '工伤赔偿',
+        title: '发生工伤如何申请赔偿？',
+        summary: '工伤认定是获得工伤赔偿的前提，应及时向人力资源社会保障部门申请...',
+        content: '工伤赔偿流程：\n\n1. 工伤认定（30天内）\n2. 劳动能力鉴定\n3. 工伤待遇申领\n\n赔偿项目：\n• 医疗费\n• 住院伙食补助费\n• 护理费\n• 停工留薪期工资\n• 一次性伤残补助金\n• 一次性工伤医疗补助金\n• 一次性伤残就业补助金\n\n注意事项：\n• 及时就医并保留病历\n• 30天内申请工伤认定\n• 单位拒绝可自行申请'
+      },
+      {
+        id: 5,
+        category: '加班加点',
+        title: '加班费如何计算？',
+        summary: '用人单位安排加班的，应当按照法定标准支付加班费...',
+        content: '加班费计算标准：\n\n1. 工作日加班：工资的150%\n2. 休息日加班：工资的200%（不能调休的情况）\n3. 法定节假日加班：工资的300%\n\n计算公式：\n加班费 = 月工资 ÷ 21.75天 ÷ 8小时 × 加班小时数 × 倍数\n\n注意事项：\n• 保留加班证据（打卡记录等）\n• 法定节假日加班必须支付加班费\n• 加班费不能用调休代替'
+      },
+      {
+        id: 6,
+        category: '离职辞退',
+        title: '公司违法辞退怎么办？',
+        summary: '用人单位违法解除劳动合同的，应当支付赔偿金...',
+        content: '违法辞退的情形：\n\n1. 无正当理由辞退\n2. 未提前通知辞退\n3. 孕期、产期、哺乳期辞退\n4. 工伤期间辞退\n\n赔偿标准：\n• 经济赔偿金 = 2 × 经济补偿金\n• 经济补偿金 = 工作年限 × 月工资\n\n维权方式：\n1. 要求继续履行合同\n2. 要求支付赔偿金\n3. 申请劳动仲裁\n\n注意事项：\n• 及时固定证据\n• 注意仲裁时效\n• 可以要求出具离职证明'
+      }
+    ];
+    
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
+      }
+      return true;
+    }
+    
+    async function updateUserInfo() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        }
+      } catch (error) {
+        console.error('Error updating user info:', error);
+      }
+    }
+    
+    function renderCategories() {
+      categories.innerHTML = mockCategories.map(cat => `
+        <button 
+          class="btn ${selectedCategory === cat ? 'btn-primary' : 'btn-ghost'} btn-block text-left"
+          onclick="selectCategory('${cat}')"
+          style="justify-content: flex-start;"
+        >
+          ${cat}
+        </button>
+      `).join('');
+    }
+    
+    function selectCategory(category) {
+      selectedCategory = category;
+      renderCategories();
+      renderArticles();
+    }
+    
+    function renderArticles(searchQuery = '') {
+      let filtered = mockArticles;
+      
+      if (selectedCategory !== '全部') {
+        filtered = filtered.filter(a => a.category === selectedCategory);
+      }
+      
+      if (searchQuery) {
+        filtered = filtered.filter(a => 
+          a.title.includes(searchQuery) || 
+          a.summary.includes(searchQuery) ||
+          a.content.includes(searchQuery)
+        );
+      }
+      
+      if (filtered.length === 0) {
+        articlesList.innerHTML = `
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-state-icon">📚</div>
+              <div class="empty-state-title">暂无相关内容</div>
+              <div class="empty-state-text">试试其他关键词或分类</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      
+      articlesList.innerHTML = filtered.map(article => `
+        <div class="card mb-lg" style="cursor: pointer;" onclick="openArticle(${article.id})">
+          <div class="card-header">
+            <h3 class="card-title">${article.title}</h3>
+            <div class="badge badge-primary">${article.category}</div>
+          </div>
+          <div class="card-body">
+            <p class="text-secondary mb-0">${article.summary}</p>
+          </div>
+          <div class="card-footer">
+            <span class="text-secondary" style="font-size: 13px;">点击查看详情</span>
+            <span>→</span>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function openArticle(id) {
+      const article = mockArticles.find(a => a.id === id);
+      if (!article) return;
+      
+      articleTitle.textContent = article.title;
+      articleContent.innerHTML = `
+        <div class="mb-lg">
+          <span class="badge badge-primary">${article.category}</span>
+        </div>
+        <div style="white-space: pre-wrap; line-height: 2;">${article.content}</div>
+        <div class="mt-xl p-lg" style="background: var(--bg-secondary); border-radius: 8px;">
+          <div class="text-secondary mb-sm">相关服务</div>
+          <div class="btn-group">
+            <a href="conversations.html" class="btn btn-outline btn-sm">💬 咨询AI助手</a>
+            <a href="docgen.html" class="btn btn-outline btn-sm">📄 生成文书</a>
+          </div>
+        </div>
+      `;
+      
+      articleModal.classList.remove('hidden');
+    }
+    
+    window.selectCategory = selectCategory;
+    window.openArticle = openArticle;
+    
+    searchBtn.addEventListener('click', () => {
+      const query = searchInput.value.trim();
+      renderArticles(query);
+    });
+    
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchBtn.click();
+      }
+    });
+    
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
+    if (checkLoginStatus()) {
+      updateUserInfo();
+      renderCategories();
+      renderArticles();
+    }
+    
+    if (window.innerWidth <= 768) {
+      document.querySelector('.kb-container').style.gridTemplateColumns = '1fr';
+    }
   </script>
-</body></html>
+</body>
+</html>

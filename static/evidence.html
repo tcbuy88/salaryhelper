@@ -1,29 +1,299 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>证据库 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>证据管理 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <h2>证据库（上传 & 预览）</h2>
-  <input id="f" type="file" multiple />
-  <button id="up">上传</button>
-  <div id="list"></div>
-  <script src="api-client.js"></script>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-ghost">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">证据管理</h2>
+            <p class="text-secondary mt-sm">安全上传和管理您的证据材料</p>
+          </div>
+          <a href="index.html" class="btn btn-ghost">
+            ← 返回首页
+          </a>
+        </div>
+
+        <div class="card mb-lg">
+          <h3 class="card-title">上传文件</h3>
+          <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px; text-center; background: var(--bg-secondary);">
+            <div style="font-size: 48px; margin-bottom: 16px;">📤</div>
+            <div class="mb-lg">
+              <p class="text-secondary mb-sm">拖拽文件到此处或点击上传按钮</p>
+              <p style="font-size: 13px; color: var(--text-light);">支持 PDF, DOC, DOCX, JPG, PNG 等格式，单个文件不超过 10MB</p>
+            </div>
+            <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"/>
+            <button id="uploadBtn" class="btn btn-primary">
+              选择文件上传
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">我的文件</h3>
+            <div>
+              <span id="fileCount" class="text-secondary mr-lg">共 0 个文件</span>
+              <button id="refreshBtn" class="btn btn-sm btn-outline">
+                🔄 刷新
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="fileList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    document.getElementById('up').addEventListener('click', async ()=>{
-      const input=document.getElementById('f');
-      for(const file of input.files){
-        await ApiClient.uploadFile(file);
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const fileList = document.getElementById('fileList');
+    const fileCount = document.getElementById('fileCount');
+    
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
       }
-      render();
-    });
-    async function render(){
-      const arr = await ApiClient.listAttachments();
-      const el=document.getElementById('list'); el.innerHTML='';
-      arr.forEach(a=>{
-        const d=document.createElement('div'); d.innerHTML='<strong>'+a.file_name+'</strong> ('+Math.round(a.size_bytes/1024)+' KB)';
-        if(a.content_type && a.content_type.startsWith('image/')) {
-          const img=document.createElement('img'); img.src=a.preview_url; img.style.maxWidth='200px'; d.appendChild(img);
-        }
-        el.appendChild(d);
-      });
+      return true;
     }
-    render();
+    
+    async function updateUserInfo() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = ApiClient.getCurrentUserSync();
+        if (user) {
+          userName.textContent = user.name || user.phone;
+        }
+      } catch (error) {
+        console.error('Error updating user info:', error);
+      }
+    }
+    
+    async function loadFiles() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        fileList.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>加载中...</div></div>';
+        
+        const files = await ApiClient.listAttachments();
+        
+        fileCount.textContent = `共 ${files.length} 个文件`;
+        
+        if (files.length === 0) {
+          fileList.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📁</div>
+              <div class="empty-state-title">暂无文件</div>
+              <div class="empty-state-text">上传您的证据材料，如劳动合同、工资条、聊天记录等</div>
+            </div>
+          `;
+          return;
+        }
+        
+        fileList.innerHTML = `
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 40%;">文件名</th>
+                  <th style="width: 15%;">类型</th>
+                  <th style="width: 15%;">大小</th>
+                  <th style="width: 20%;">上传时间</th>
+                  <th style="width: 10%;">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${files.map(file => `
+                  <tr>
+                    <td>
+                      <div class="flex items-center gap-sm">
+                        <span>${getFileIcon(file.content_type)}</span>
+                        <span>${file.file_name}</span>
+                      </div>
+                    </td>
+                    <td>${getFileType(file.content_type)}</td>
+                    <td>${formatFileSize(file.size_bytes)}</td>
+                    <td>${new Date(file.created_at).toLocaleString('zh-CN')}</td>
+                    <td>
+                      <div class="table-actions">
+                        <button class="btn btn-sm btn-ghost" onclick="viewFile('${file.id}')" title="查看">
+                          👁️
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')" title="删除">
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+      } catch (error) {
+        console.error('Failed to load files:', error);
+        fileList.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>加载文件列表失败: ${error.message}</div>
+          </div>
+        `;
+      }
+    }
+    
+    function getFileIcon(contentType) {
+      if (!contentType) return '📄';
+      if (contentType.includes('pdf')) return '📕';
+      if (contentType.includes('word') || contentType.includes('document')) return '📘';
+      if (contentType.includes('image')) return '🖼️';
+      if (contentType.includes('text')) return '📃';
+      return '📄';
+    }
+    
+    function getFileType(contentType) {
+      if (!contentType) return '未知';
+      if (contentType.includes('pdf')) return 'PDF';
+      if (contentType.includes('word')) return 'Word';
+      if (contentType.includes('document')) return '文档';
+      if (contentType.includes('image')) return '图片';
+      if (contentType.includes('text')) return '文本';
+      return contentType.split('/')[1] || '其他';
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    async function uploadFiles(files) {
+      if (!checkLoginStatus()) return;
+      
+      if (files.length === 0) return;
+      
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0;"></div> 上传中...';
+      
+      try {
+        const uploadPromises = Array.from(files).map(file => {
+          return ApiClient.uploadFile(file);
+        });
+        
+        await Promise.all(uploadPromises);
+        
+        alert(`成功上传 ${files.length} 个文件！`);
+        await loadFiles();
+        
+      } catch (error) {
+        console.error('Upload failed:', error);
+        alert('上传失败: ' + error.message);
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '选择文件上传';
+        fileInput.value = '';
+      }
+    }
+    
+    function viewFile(fileId) {
+      alert('文件查看功能开发中...\n文件ID: ' + fileId);
+    }
+    
+    async function deleteFile(fileId) {
+      if (!confirm('确定要删除这个文件吗？此操作不可恢复。')) {
+        return;
+      }
+      
+      try {
+        alert('文件已删除（模拟）');
+        await loadFiles();
+      } catch (error) {
+        console.error('Delete failed:', error);
+        alert('删除失败: ' + error.message);
+      }
+    }
+    
+    window.viewFile = viewFile;
+    window.deleteFile = deleteFile;
+    
+    uploadBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        uploadFiles(e.target.files);
+      }
+    });
+    
+    refreshBtn.addEventListener('click', loadFiles);
+    
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
+    const dropZone = document.querySelector('.card');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.style.borderColor = 'var(--primary-color)';
+      }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.style.borderColor = 'var(--border-color)';
+      }, false);
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      uploadFiles(files);
+    }, false);
+    
+    if (checkLoginStatus()) {
+      updateUserInfo();
+      loadFiles();
+    }
   </script>
-</body></html>
+</body>
+</html>

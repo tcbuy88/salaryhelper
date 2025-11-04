@@ -1,12 +1,281 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>我的 - SalaryHelper DEMO</title><link rel="stylesheet" href="styles.css"/></head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>用户中心 - SalaryHelper</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
 <body>
-  <h2>用户中心</h2>
-  <div id="user"></div>
-  <button id="logout">登出</button>
-  <script src="api-client.js"></script>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="app-header-content">
+        <a href="index.html" class="app-logo">
+          ⚖️ SalaryHelper
+        </a>
+        <div class="user-info">
+          <span id="userName" class="text-secondary">加载中...</span>
+          <button id="logoutBtn" class="btn btn-sm btn-danger">退出登录</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="container-wide">
+        <div class="flex justify-between items-center mb-lg">
+          <div>
+            <h2 class="mb-0">用户中心</h2>
+            <p class="text-secondary mt-sm">管理个人信息和账户设置</p>
+          </div>
+          <a href="index.html" class="btn btn-ghost">
+            ← 返回首页
+          </a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;" class="user-center-container">
+          <div>
+            <div class="card mb-lg">
+              <div class="card-header">
+                <h3 class="card-title">个人信息</h3>
+                <button id="editProfileBtn" class="btn btn-sm btn-outline">编辑</button>
+              </div>
+              <div class="card-body" id="profileInfo">
+                <div class="loading">
+                  <div class="loading-spinner"></div>
+                  <div>加载中...</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-lg">
+              <div class="card-header">
+                <h3 class="card-title">我的订单</h3>
+                <a href="payment.html" class="btn btn-sm btn-outline">查看全部</a>
+              </div>
+              <div class="card-body">
+                <div id="ordersList"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">我的文档</h3>
+                <a href="docgen.html" class="btn btn-sm btn-outline">生成文档</a>
+              </div>
+              <div class="card-body">
+                <div id="documentsList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card mb-lg">
+              <h3 class="card-title">账户统计</h3>
+              <div class="stat-card" style="border: none; box-shadow: none; padding: 12px 0;">
+                <div class="stat-label">会话总数</div>
+                <div class="stat-value" id="conversationCount" style="font-size: 28px;">-</div>
+              </div>
+              <div class="stat-card" style="border: none; box-shadow: none; padding: 12px 0;">
+                <div class="stat-label">文书总数</div>
+                <div class="stat-value" id="documentCount" style="font-size: 28px;">-</div>
+              </div>
+              <div class="stat-card" style="border: none; box-shadow: none; padding: 12px 0;">
+                <div class="stat-label">订单总数</div>
+                <div class="stat-value" id="orderCount" style="font-size: 28px;">-</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">快捷操作</h3>
+              <div class="flex flex-col gap-sm">
+                <a href="conversations.html" class="btn btn-outline btn-block">
+                  💬 我的会话
+                </a>
+                <a href="docgen.html" class="btn btn-outline btn-block">
+                  📄 生成文书
+                </a>
+                <a href="payment.html" class="btn btn-outline btn-block">
+                  💳 充值付费
+                </a>
+                <a href="evidence.html" class="btn btn-outline btn-block">
+                  📁 证据管理
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="api-client-real.js"></script>
   <script>
-    async function render(){ const u = await ApiClient.getCurrentUser(); document.getElementById('user').innerText = JSON.stringify(u,null,2); }
-    document.getElementById('logout').addEventListener('click', ()=> { ApiClient.logout(); location.href='/static/index.html'; });
-    render();
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const profileInfo = document.getElementById('profileInfo');
+    const ordersList = document.getElementById('ordersList');
+    const documentsList = document.getElementById('documentsList');
+    const conversationCount = document.getElementById('conversationCount');
+    const documentCount = document.getElementById('documentCount');
+    const orderCount = document.getElementById('orderCount');
+    
+    function checkLoginStatus() {
+      if (!ApiClient.isLoggedIn()) {
+        window.location.href = '/static/login.html';
+        return false;
+      }
+      return true;
+    }
+    
+    async function loadUserProfile() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const user = await ApiClient.getCurrentUser();
+        
+        userName.textContent = user.name || user.phone;
+        
+        profileInfo.innerHTML = `
+          <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 24px;">
+            <div class="user-avatar" style="width: 80px; height: 80px; font-size: 32px;">
+              ${(user.name || user.phone).charAt(0)}
+            </div>
+            <div>
+              <h3 class="mb-sm">${user.name || '未设置昵称'}</h3>
+              <div class="text-secondary">手机号: ${user.phone}</div>
+              <div class="text-secondary">ID: ${user.id}</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+            <div>
+              <div class="form-label">注册时间</div>
+              <div>${new Date(user.created_at).toLocaleString('zh-CN')}</div>
+            </div>
+            <div>
+              <div class="form-label">账户状态</div>
+              <div><span class="badge badge-success">正常</span></div>
+            </div>
+          </div>
+        `;
+        
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+        profileInfo.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>加载用户信息失败: ${error.message}</div>
+          </div>
+        `;
+      }
+    }
+    
+    async function loadOrders() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const orders = await ApiClient.listOrders();
+        
+        if (orders.length === 0) {
+          ordersList.innerHTML = '<div class="empty-state" style="padding: 32px;"><div class="text-secondary">暂无订单</div></div>';
+          return;
+        }
+        
+        const recentOrders = orders.slice(0, 3);
+        
+        ordersList.innerHTML = recentOrders.map(order => `
+          <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+            <div class="flex justify-between items-center mb-sm">
+              <div style="font-weight: 600;">${order.product_type || '服务'}</div>
+              <div class="badge ${order.status === 'paid' ? 'badge-success' : 'badge-warning'}">
+                ${order.status === 'paid' ? '已支付' : order.status === 'pending' ? '待支付' : order.status}
+              </div>
+            </div>
+            <div class="text-secondary" style="font-size: 13px;">
+              <div>金额: ¥${order.amount.toFixed(2)}</div>
+              <div>时间: ${new Date(order.created_at).toLocaleString('zh-CN')}</div>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        ordersList.innerHTML = '<div class="text-secondary text-center p-lg">加载失败</div>';
+      }
+    }
+    
+    async function loadDocuments() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const documents = await ApiClient.listDocuments();
+        
+        if (documents.length === 0) {
+          documentsList.innerHTML = '<div class="empty-state" style="padding: 32px;"><div class="text-secondary">暂无文档</div></div>';
+          return;
+        }
+        
+        const recentDocs = documents.slice(0, 3);
+        
+        documentsList.innerHTML = recentDocs.map(doc => `
+          <div style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+            <div class="flex justify-between items-center mb-sm">
+              <div style="font-weight: 600;">${doc.title || '未命名文档'}</div>
+              <div class="badge ${doc.status === 'completed' ? 'badge-success' : 'badge-warning'}">
+                ${doc.status === 'completed' ? '已完成' : doc.status}
+              </div>
+            </div>
+            <div class="text-secondary" style="font-size: 13px;">
+              ${new Date(doc.created_at).toLocaleString('zh-CN')}
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Failed to load documents:', error);
+        documentsList.innerHTML = '<div class="text-secondary text-center p-lg">加载失败</div>';
+      }
+    }
+    
+    async function loadStats() {
+      if (!checkLoginStatus()) return;
+      
+      try {
+        const [conversations, documents, orders] = await Promise.all([
+          ApiClient.listConversations().catch(() => []),
+          ApiClient.listDocuments().catch(() => []),
+          ApiClient.listOrders().catch(() => [])
+        ]);
+        
+        conversationCount.textContent = conversations.length;
+        documentCount.textContent = documents.length;
+        orderCount.textContent = orders.length;
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+    
+    editProfileBtn.addEventListener('click', () => {
+      alert('个人信息编辑功能开发中...');
+    });
+    
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) {
+        ApiClient.logout();
+        window.location.href = '/static/login.html';
+      }
+    });
+    
+    if (checkLoginStatus()) {
+      loadUserProfile();
+      loadOrders();
+      loadDocuments();
+      loadStats();
+    }
+    
+    if (window.innerWidth <= 768) {
+      document.querySelector('.user-center-container').style.gridTemplateColumns = '1fr';
+    }
   </script>
-</body></html>
+</body>
+</html>
